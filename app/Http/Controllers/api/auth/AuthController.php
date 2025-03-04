@@ -7,6 +7,7 @@ use App\Http\Requests\loginRequest;
 use App\Http\Requests\RegistrationRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -36,7 +37,15 @@ class AuthController extends Controller
 
       public function register(RegistrationRequest $request)
       {
-        $user = User::create($request->validated());
+        $user = User::create([
+            'national_id' => $request->national_id,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'phone' => $request->phone,
+            'role' => $request->role,
+            'email' => $request->email,
+            'password' =>  Hash::make($request->password) 
+        ]);
         if($user)
         {
             $token = auth()->login($user);
