@@ -22,11 +22,11 @@ class RegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'national_id' => 'required|integer|digits_between:10,10',
+            'national_id' => 'required|integer|digits_between:10,10|unique:users',
             'first_name' =>'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'phone' => 'required|integer',
-            'role' => 'required|integer|in:1,2,3,4', // 1 = Manager , 2 = Secretary , 3 = teachers , 4 = students
+            // 'role' => 'required|integer|in:1,2,3,4',  // 1 = Manager , 2 = Secretary , 3 = teachers , 4 = students
             'email' =>'nullable|email|unique:users|email:filter',
             'password' => 'required|string|min:8|confirmed',
         ];
