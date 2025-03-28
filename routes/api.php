@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\api\auth\AuthController;
 
@@ -39,3 +40,8 @@ Route::get('v1/role/give-permission/{id}',[RoleController::class,'addPermissions
 Route::put('v1/role/give-permission/{id}',[RoleController::class,'givePermissionsToRole']);
 Route::get('v1/role/revoke-permission/{id}',[RoleController::class,'getPermissionsOfRole']);
 Route::put('v1/role/revoke-permission/{id}',[RoleController::class,'revokePermissionFromRole']);
+
+Route::get('v1/user',[UserController::class,'index']);
+Route::get('v1/user/{id}',[UserController::class,'edit']);
+Route::put('v1/user/{id}',[UserController::class,'update']);
+Route::delete('v1/user/{id}',[UserController::class,'destroy']);

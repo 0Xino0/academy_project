@@ -24,7 +24,6 @@ class loginRequest extends FormRequest
         return [
             'email' =>'required|email:filter',
             'password' => 'required|min:8',
-            // 'role' => 'required|integer|in:1,2,3,4'
         ];
     }
 }

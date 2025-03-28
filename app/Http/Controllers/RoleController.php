@@ -208,7 +208,7 @@ class RoleController extends Controller
         ]);
     }
 
-    // revoke a permission from a role
+    // revoke permissions from a role
     public function revokePermissionFromRole(Request $request, string $id)
     {
         $request->validate([
