@@ -1,11 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\api\auth\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,13 +15,6 @@ use App\Http\Controllers\api\auth\AuthController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
-
-Route::post('v1/auth/register', [AuthController::class , 'register']);
-Route::post('v1/auth/login', [AuthController::class , 'login']);
 
 Route::post('v1/permission',[PermissionController::class,'store']);
 Route::get('v1/permission',[PermissionController::class,'index']);
@@ -45,3 +36,5 @@ Route::get('v1/user',[UserController::class,'index']);
 Route::get('v1/user/{id}',[UserController::class,'edit']);
 Route::put('v1/user/{id}',[UserController::class,'update']);
 Route::delete('v1/user/{id}',[UserController::class,'destroy']);
+
+require __DIR__ . '/auth.php';
