@@ -1,9 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\api\role_permission\RoleController;
+use App\Http\Controllers\api\user\UserController;
+use App\Http\Controllers\api\role_permission\PermissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +32,7 @@ Route::put('v1/role/give-permission/{id}',[RoleController::class,'givePermission
 Route::get('v1/role/revoke-permission/{id}',[RoleController::class,'getPermissionsOfRole']);
 Route::put('v1/role/revoke-permission/{id}',[RoleController::class,'revokePermissionFromRole']);
 
+Route::get('v1/user/create',[UserController::class,'create']);
 Route::get('v1/user',[UserController::class,'index']);
 Route::get('v1/user/{id}',[UserController::class,'edit']);
 Route::put('v1/user/{id}',[UserController::class,'update']);

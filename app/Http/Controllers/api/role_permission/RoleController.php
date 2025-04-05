@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\api\role_permission;
 
 use Exception;
 use Illuminate\Http\Request;
 use App\Http\Requests\RoleRequest;
 use Spatie\Permission\Models\Role;
+use App\Http\Controllers\Controller;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
@@ -166,6 +167,7 @@ class RoleController extends Controller
 
         return response()->json([
             'role' => $role,
+            'permissonsOfRole' => $role->permissions,
             'permissions' => $permissions
         ]);
     

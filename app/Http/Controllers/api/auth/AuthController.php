@@ -38,6 +38,8 @@ class AuthController extends Controller
       public function register(RegistrationRequest $request)
       {
 
+        $this->authorize('create' , User::class);
+
         $request->validated();
         
         $user = User::create([
@@ -48,9 +50,6 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' =>  Hash::make($request->password) 
         ]);
-        // $user = User::create(array_merge($request->validated(),[
-        //     'password' => Hash::make($request->password)
-        // ]) );
 
         $user->syncRoles($request->roles);
         if($user)

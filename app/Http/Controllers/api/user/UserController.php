@@ -1,26 +1,42 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\api\user;
 
 
 use Exception;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     public function Index()
     {
+        $this->authorize('view' , User::class);
+
         $users = User::get();
         return response()->json([
             'data' => $users
         ]);
     }
 
+    public function create()
+    {
+        $this->authorize('create' , User::class);
+
+        $roles = Role::pluck('name','name')->all();
+        return response()->json([
+            'roles' => $roles,
+        ]);
+    }
+
     public function edit(string $id)
     {
+        $this->authorize('update' , User::class);
+        
+
         try{
             $user = User::findOrFail($id);
         }catch(Exception $e){
@@ -38,7 +54,9 @@ class UserController extends Controller
 
     public function update(Request $request, string $id)
     {
+        $this->authorize('update' , User::class);
 
+        
         try{
             $user = User::findOrFail($id);
         }catch(Exception $e){
@@ -46,16 +64,20 @@ class UserController extends Controller
                'message' => 'Error: '.$e->getMessage(),
             ], 500);
         }
+
+        
         
         $request->validate([
-            'national_id' => 'required|integer|digits_between:10,10|unique:users,national_id,'.$request->id,
+            'national_id' => 'required|integer|digits_between:10,10|unique:users,national_id,'.$user->id,
             'first_name' =>'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'phone' => 'required|integer',
             'roles' => 'required',  
-            'email' =>'nullable|email|unique:users,email,'.$request->id.'|email:filter',
-            'password' => 'nullable|string|min:8|confirmed',
+            'email' =>'nullable|email|email:filter|unique:users,email,'.$user->id,
         ]);
+
+        
+        
 
         $data = [
             'national_id' => $request->national_id,
@@ -65,15 +87,6 @@ class UserController extends Controller
             'email' => $request->email,
         ];
 
-        if(!empty($request->password))
-        {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        // return response()->json([
-        //     'message' => 'User updated successfully',
-        //     'data' => $data,
-        // ]);
         $user->update($data);
 
         $user->syncRoles($request->roles);
@@ -88,6 +101,8 @@ class UserController extends Controller
 
     public function destroy(string $id)
     {
+        $this->authorize('delete' , User::class);
+
         try{
             $user = User::findOrFail($id);
         }catch(Exception $e){
