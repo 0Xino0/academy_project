@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\api\student\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\user\UserController;
 use App\Http\Controllers\api\teacher\TeacherController;
 use App\Http\Controllers\api\role_permission\RoleController;
 use App\Http\Controllers\api\role_permission\PermissionController;
+use App\Models\Student;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +46,13 @@ Route::get('v1/teacher/create/{id}',[TeacherController::class,'create']);
 Route::post('v1/teacher/{id}',[TeacherController::class,'store']);
 Route::put('v1/teacher/{id}',[TeacherController::class,'update']);
 Route::delete('v1/teacher/{id}',[TeacherController::class,'destroy']);
+
+Route::get('v1/students',[StudentController::class,'index']);
+Route::get('v1/student/create/{id}',[StudentController::class,'create']);
+Route::post('v1/student/{id}',[StudentController::class,'store']);
+Route::get('v1/student/update/{id}',[StudentController::class,'edit']);
+Route::put('v1/student/{id}',[StudentController::class,'update']);
+Route::delete('v1/student/{id}',[StudentController::class,'destroy']);
 
 
 require __DIR__ . '/auth.php';

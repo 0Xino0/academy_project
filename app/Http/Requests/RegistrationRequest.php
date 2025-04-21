@@ -25,7 +25,7 @@ class RegistrationRequest extends FormRequest
             'national_id' => 'required|integer|digits_between:10,10|unique:users',
             'first_name' =>'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'phone' => 'required|integer',
+            'phone' => ['required','regex:/^(0|\+98)[0-9]{10}$/'],
             'roles' => 'required',  
             'email' =>'nullable|email|unique:users|email:filter',
             'password' => 'required|string|min:8|confirmed',
