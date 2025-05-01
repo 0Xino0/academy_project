@@ -60,13 +60,13 @@ class TeacherController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(TeacherRequest $request , string $id)
+    public function store(TeacherRequest $request)
     {
         
         // return response()->json([
         //     'data' => $request
         // ]);
-        $teacher = Teacher::create(array_merge($request->validated(),['user_id' => $id]));
+        $teacher = Teacher::create($request->validated());
 
         if($teacher)
         {

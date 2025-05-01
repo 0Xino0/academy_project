@@ -22,13 +22,18 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        if($user->hasPermissionTo('view user'))
+        {
+            return true;
+        }else{
+            return false;
+        }
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, User $model): bool
+    public function view(User $user, User $model): Response|bool
     {
         if($user->hasPermissionTo('view user'))
         {

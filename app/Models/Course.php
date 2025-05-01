@@ -14,4 +14,9 @@ class Course extends Model
         'level',
         'description'
     ];
+
+    public function classes()
+    {
+        return $this->hasMany(ClassModel::class);
+    }
 }

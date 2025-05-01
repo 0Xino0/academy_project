@@ -8,13 +8,20 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function Index()
+    public function Index(User $user)
     {
-        $this->authorize('view' , User::class);
+        // $this->authorize('view' , User::class);
+        if(Gate::denies('viewAny' , User::class))
+        {
+            return response()->json([
+                'message' => 'You do not have permission to view users'
+            ], 403);
+        }
 
         $users = User::get();
         return response()->json([
@@ -34,7 +41,13 @@ class UserController extends Controller
 
     public function edit(string $id)
     {
-        $this->authorize('update' , User::class);
+        // $this->authorize('update' , User::class);
+        if(Gate::denies('view' , User::class))
+        {
+            return response()->json([
+                'message' => 'You do not have permission to view this user'
+            ], 403);
+        }
         
 
         try{
@@ -54,7 +67,13 @@ class UserController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $this->authorize('update' , User::class);
+        // $this->authorize('update' , User::class);
+        if(Gate::denies('update' , User::class))
+        {
+            return response()->json([
+                'message' => 'You do not have permission to update this user'
+            ], 403);
+        }
 
         
         try{
@@ -101,7 +120,13 @@ class UserController extends Controller
 
     public function destroy(string $id)
     {
-        $this->authorize('delete' , User::class);
+        // $this->authorize('delete' , User::class);
+        if(Gate::denies('delete' , User::class))
+        {
+            return response()->json([
+                'message' => 'You do not have permission to delete this user'
+            ], 403);
+        }
 
         try{
             $user = User::findOrFail($id);
