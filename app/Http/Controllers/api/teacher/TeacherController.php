@@ -158,6 +158,7 @@ class TeacherController extends Controller
     {
         try{
             $teacher = Teacher::findOrFail($id);
+            $user = User::findOrFail($teacher->user_id);
         }catch(\Exception $e){
             return response()->json([
                 'status' => false,
@@ -165,6 +166,8 @@ class TeacherController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+
+        $user->removeRole('teacher');
 
         $result = $teacher->delete();
 
