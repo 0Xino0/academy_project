@@ -4,11 +4,14 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\user\UserController;
 use App\Http\Controllers\api\class\ClassController;
+use App\Http\Controllers\api\grade\GradeController;
 use App\Http\Controllers\api\course\CourseController;
 use App\Http\Controllers\api\student\StudentController;
 use App\Http\Controllers\api\teacher\TeacherController;
 use App\Http\Controllers\api\role_permission\RoleController;
+use App\Http\Controllers\api\registration\RegistrationController;
 use App\Http\Controllers\api\role_permission\PermissionController;
+use Spatie\Permission\Contracts\Role;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +72,14 @@ Route::post('v1/class',[ClassController::class,'store']);
 Route::get('v1/class/edit/{id}',[ClassController::class,'edit']);
 Route::put('v1/class/update/{id}',[ClassController::class,'update']);
 Route::delete('v1/class/delete/{id}',[ClassController::class,'destroy']);
+
+Route::get('v1/registrations',[RegistrationController::class,'index']);
+Route::get('v1/registration/create',[RegistrationController::class,'create']);
+Route::post('v1/registration',[RegistrationController::class,'store']);
+Route::get('v1/registration/show/{id}',[RegistrationController::class,'show']);
+Route::get('v1/registration/edit/{id}',[RegistrationController::class,'edit']);
+Route::put('v1/registration/update/{id}',[RegistrationController::class,'update']);
+Route::delete('v1/registration/delete/{id}',[RegistrationController::class,'destroy']);
 
 
 require __DIR__ . '/auth.php';
