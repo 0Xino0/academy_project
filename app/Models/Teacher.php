@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Database\Factories\TeacherFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Teacher extends Model
 {
@@ -26,5 +27,10 @@ class Teacher extends Model
     public function classes()
     {
         return $this->hasMany(ClassModel::class);
+    }
+
+    protected static function newFactory()
+    {
+        return TeacherFactory::new();
     }
 }
