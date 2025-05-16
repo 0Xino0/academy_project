@@ -88,20 +88,7 @@ class CourseController extends Controller
      */
     public function edit(string $id)
     {
-        try{
-            $course = Course::findOrFail($id);
-            return response()->json([
-                'status' => true,
-                'message' => 'data of course retrivied successfully',
-                'data' => $course
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'stauts' => false,
-                'message' => 'an error while getting courses',
-                'error' => $e->getMessage()
-            ]);
-        }
+       //
     }
 
     /**

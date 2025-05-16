@@ -28,10 +28,6 @@ class PasswordService
             ], 500);
         }
 
-        // return response()->json([
-        //     'auth' => auth()->user(),
-        //     'user' => $user,
-        // ]);
         if(auth()->user() == $user)
         {
             $updatePassword = $user->update([

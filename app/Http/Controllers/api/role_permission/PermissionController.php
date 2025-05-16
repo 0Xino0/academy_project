@@ -54,14 +54,6 @@ class PermissionController extends Controller
      */
     public function show(string $id)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
         try{
             $permission = Permission::findOrFail($id);
         }catch(\Exception $e)
@@ -75,6 +67,14 @@ class PermissionController extends Controller
         return response()->json([
             'data' => $permission
         ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
     }
 
     /**

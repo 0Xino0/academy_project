@@ -9,6 +9,11 @@ class ClassModel extends Model
 {
     use HasFactory;
 
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
+
     protected $table = 'classes';
 
     protected $fillable = [
@@ -16,7 +21,7 @@ class ClassModel extends Model
         'teacher_id',
         'start_date',
         'end_date',
-        'term',
+        'term_id',
         'capacity',
         'tuition_fee',
         'name'
@@ -31,4 +36,32 @@ class ClassModel extends Model
     {
         return $this->belongsTo(Teacher::class);
     }
+
+    public function registeredStudents()
+    {
+        return $this->belongsToMany(Student::class, 'registrations', 'class_id', 'student_id')
+            ->withPivot('registration_date');
+    }
+
+    public function studentsWithGrades()
+    {
+        return $this->belongsToMany(Student::class, 'grades', 'class_id', 'student_id')
+            ->withPivot('grade','entered_at');
+    }
+
+    public function registrations()
+    {
+        return $this->hasMany(Registration::class,'class_id');
+    }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class,'class_id');
+    }
+
+    public function term()
+    {
+        return $this->belongsTo(Term::class);
+    }
 }
+

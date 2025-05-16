@@ -14,11 +14,10 @@ class TeacherController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(User $user)
+    public function index(Teacher $teacher)
     {
-        $teachers = $user::with('roles')->get()->filter(
-            fn ($user) => $user->roles->where('name', 'teacher')->toArray()
-        );
+        $teachers = $teacher::with('user')->get();
+        
         if($teachers->isEmpty()) {
             return response()->json([
                 'status' => false,
@@ -39,22 +38,39 @@ class TeacherController extends Controller
      */
     public function create(string $id,User $user)
     {
-        try{
-            $teacher = $user::findOrFail($id);
-            return response()->json([
-                'status' => true,
-                'message' => 'Teacher retrieved successfully',
-                'data' => $teacher
-            ]);
+        //
+    }
 
+    // Updating data from the teacher that the admin must have access to
+    public function updateAdminInfo(Request $request,string $id)
+    {
+        try{
+            $teacher = Teacher::findOrFail($id);
         }catch(\Exception $e){
             return response()->json([
                 'status' => false,
                 'message' => 'Teacher not found',
-                'error' => $e->getMessage()
             ]);
         }
-        
+
+        $result = $teacher->update($request->validate([
+            'salary' => 'required|integer',
+        ]));
+
+        if($result)
+        {
+            return response()->json([
+                'status' => true,
+                'message' => 'Teacher information updated successfully.',
+                'data' =>  $teacher->with('user')->where('id',$id)->first()
+            ]);
+        }else{
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while updating the teacher.',
+            ]);
+        }
+
     }
 
     /**
@@ -62,42 +78,16 @@ class TeacherController extends Controller
      */
     public function store(TeacherRequest $request)
     {
-        
-        // return response()->json([
-        //     'data' => $request
-        // ]);
-        $teacher = Teacher::create($request->validated());
-
-        if($teacher)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'Teacher information completed successfully.',
-                'data' => $teacher
-            ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while creating the teacher.',
-            ]);
-        }
+        // 
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Teacher $teacher)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Teacher $teacher,string $id)
+    public function show(Teacher $teacher,string $id)
     {
         try{
-            $teacher = Teacher::findOrFail($id);
+            $teacher = $teacher::with('user')->where('id',$id)->first();
             return response()->json([
                 'status' => true,
                 'message' => 'Teacher retrieved successfully',
@@ -111,6 +101,14 @@ class TeacherController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Teacher $teacher,string $id)
+    {
+        //
     }
 
     /**
@@ -127,21 +125,20 @@ class TeacherController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
-        $request->validate([
-            'salary' => 'required|integer',
+        
+
+        $result = $teacher->update($request->validate([
             'resume' => 'nullable|string',
-            'join_date' => 'required|date',
-            'leave_date' => 'nullable|date'
-        ]);
+            'bio' => 'nullable|string',
+            'degree' => 'nullable|string',
+        ]));
 
-        $teacher->update($request->all());
-
-        if($teacher)
+        if($result)
         {
             return response()->json([
                 'status' => true,
                 'message' => 'Teacher information updated successfully.',
-                'data' => $teacher
+                'data' => $teacher->with('user')->where('id',$id)->first()
             ]);
         }else{
             return response()->json([

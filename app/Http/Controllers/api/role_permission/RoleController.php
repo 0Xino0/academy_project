@@ -56,14 +56,6 @@ class RoleController extends Controller
      */
     public function show(string $id)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
         try
         {
             $role = Role::findOrFail($id);
@@ -77,8 +69,14 @@ class RoleController extends Controller
         return response()->json([
             'data' => $role
         ]);
+    }
 
-        
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
     }
 
     /**
@@ -151,7 +149,7 @@ class RoleController extends Controller
     }
 
     // show permissions to assign that to a role
-    public function addPermissionsToRole(string $id)
+    public function getPermissionsOfRole(string $id)
     {
         try{
             $role = Role::findOrFail($id);
@@ -197,17 +195,6 @@ class RoleController extends Controller
         ]);
 
         
-    }
-
-    // get permissions of a role
-    public function getPermissionsOfRole(string $id)
-    {
-        $role = Role::findOrFail($id);
-
-        return response()->json([
-            'role' => $role,
-            'permissions' => $role->permissions
-        ]);
     }
 
     // revoke permissions from a role

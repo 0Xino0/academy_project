@@ -77,11 +77,11 @@ Route::get('v1/terms/{term_id}/classes/{class_id}',[ClassController::class,'show
 Route::put('v1/terms/{term_id}/classes/{class_id}',[ClassController::class,'update']);
 Route::delete('v1/terms/{term_id}/classes/{class_id}',[ClassController::class,'destroy']);
 
-Route::get('v1/registrations',[RegistrationController::class,'index']);
-Route::post('v1/registrations',[RegistrationController::class,'store']);
-Route::get('v1/registrations/{id}',[RegistrationController::class,'show']);
-Route::put('v1/registrations/{id}',[RegistrationController::class,'update']);
-Route::delete('v1/registrations/{id}',[RegistrationController::class,'destroy']);
+Route::get('v1/terms/{term_id}/classes/{class_id}/registrations',[RegistrationController::class,'index']);
+Route::post('v1/terms/{term_id}/classes/{class_id}/registrations',[RegistrationController::class,'store']);
+Route::get('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'show']);
+Route::put('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'update']);
+Route::delete('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'destroy']);
 
 
 require __DIR__ . '/auth.php';

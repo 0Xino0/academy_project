@@ -13,16 +13,22 @@ class RegistrationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(string $term_id,string $class_id)
     {
         $registrations = Registration::with([
             'student:id,user_id',
             'student.user:id,first_name,last_name,national_id',
-            'class:id,name,start_date,end_date,capacity,tuition_fee,teacher_id,course_id',
+            'class:id,name,start_date,end_date,capacity,tuition_fee,teacher_id,course_id,term_id',
             'class.course:id,title,level',
             'class.teacher:id,user_id',
-            'class.teacher.user:id,first_name,last_name'
-        ])->get();
+            'class.teacher.user:id,first_name,last_name,national_id',
+            'class.term:id,year,season,is_active'
+        ])
+        ->whereHas('class', function($query) use ($term_id) {
+            $query->where('term_id', $term_id);
+        })
+        ->where('class_id', $class_id)
+        ->get();
 
         return response()->json([
             'registrations' => $registrations
@@ -34,38 +40,31 @@ class RegistrationController extends Controller
      */
     public function create()
     {
-        $classes = ClassModel::with([
-            'course:id,title,level', 
-            'teacher:id,user_id',
-            'teacher.user:id,first_name,last_name',
-            ])->get();
-
-        $students = Student::with([
-            'user:id,first_name,last_name,national_id'
-        ])->get(['id','user_id']);    
-        
-        
-        return response()->json([
-            'classes' => $classes,
-            'students' => $students
-        ]);
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request,string $term_id,string $class_id)
     {
         
+        $student_id = auth()->user()->student->id;
 
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'class_id' => 'required|exists:classes,id',
-            'registration_date' => 'required|date'
-        ]);
+        // Check if the class belongs to the specified term
+        $class = ClassModel::where('id', $class_id)
+            ->where('term_id', $term_id)
+            ->first();
+
+        if (!$class) {
+            return response()->json([
+                'message' => 'This class does not belong to the specified term',
+            ], 409);
+        }
+
         // Check if the student is already registered in the class
         $existingRegistration = Registration::where('student_id', $request->student_id)
-            ->where('class_id', $request->class_id)
+            ->where('class_id', $class_id)
             ->first();
         if ($existingRegistration) {
             return response()->json([
@@ -73,7 +72,6 @@ class RegistrationController extends Controller
             ], 409);
         }
         // Check if the class is full
-        $class = ClassModel::find($request->class_id);
         if ($class->registeredStudents()->count() >= $class->capacity) {
             return response()->json([
                 'message' => 'Class is full',
@@ -89,7 +87,7 @@ class RegistrationController extends Controller
 
         // Check if the student is already registered in another class at the same time
         $overlappingClass = Registration::where('student_id', $request->student_id)
-        ->where('class_id', '!=', $request->class_id)
+        ->where('class_id', '!=', $class_id)
         ->whereHas('class', function ($query) use ($class) {
             $query->whereBetween('start_date', [$class->start_date, $class->end_date])
                   ->orWhereBetween('end_date', [$class->start_date, $class->end_date]);
@@ -104,9 +102,9 @@ class RegistrationController extends Controller
         // Create the registration
         try {
             $registration = Registration::create([
-                'student_id' => $request->student_id,
-                'class_id' => $request->class_id,
-                'registration_date' => $request->registration_date,
+                'student_id' => $student_id,
+                'class_id' => $class_id,
+                'registration_date' => now(),
             ]);
     
             return response()->json([
@@ -124,17 +122,24 @@ class RegistrationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $term_id,string $class_id,string $registration_id)
     {
         try{
             $registration = Registration::with([
                 'student:id,user_id',
                 'student.user:id,first_name,last_name,national_id',
-                'class:id,name,start_date,end_date,capacity,tuition_fee,teacher_id,course_id',
+                'class:id,name,start_date,end_date,capacity,tuition_fee,teacher_id,course_id,term_id',
                 'class.course:id,title,level',
                 'class.teacher:id,user_id',
-                'class.teacher.user:id,first_name,last_name'
-            ])->findOrFail($id);
+                'class.teacher.user:id,first_name,last_name',
+                'class.term:id,year,season,is_active'
+            ])
+            ->whereHas('class', function($query) use ($term_id) {
+                $query->where('term_id', $term_id);
+            })
+            ->where('class_id', $class_id)
+            ->where('id', $registration_id)
+            ->first();
 
         }catch(\Exception $e){
             return response()->json([
@@ -156,44 +161,18 @@ class RegistrationController extends Controller
      */
     public function edit(string $id)
     {
-        try{
-            $registration = Registration::with([
-                'student:id,user_id',
-                'student.user:id,first_name,last_name,national_id',
-                'class:id,name,start_date,end_date,capacity,tuition_fee,teacher_id,course_id',
-                'class.course:id,title,level',
-                'class.teacher:id,user_id',
-                'class.teacher.user:id,first_name,last_name'
-            ])->findOrFail($id);
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'error while finding registration information',
-                'error' => $e->getMessage()
-            ]);
-        }
-
-        return response()->json([
-            'status' => true,
-            'message' => 'find registration information successfully',
-            'data' => $registration
-        ]);
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $term_id,string $class_id,string $registration_id)
     {
-        $request->validate([
-            'registration_date' => 'required|date',
-            'class_id' => 'required|exists:classes,id',
-            'student_id' => 'required|exists:students,id'
-        ]);
+        $student_id = auth()->user()->student->id;
 
         try{
-            $registration = Registration::findOrFail($id);
+            $registration = Registration::findOrFail($registration_id);
 
         }catch(\Exception $e){
             return response()->json([
@@ -203,9 +182,20 @@ class RegistrationController extends Controller
             ]);
         }
 
+        // Check if the class belongs to the specified term
+        $class = ClassModel::where('id', $class_id)
+            ->where('term_id', $term_id)
+            ->first();
+
+        if (!$class) {
+            return response()->json([
+                'message' => 'This class does not belong to the specified term',
+            ], 409);
+        }
+
         // Check if the student is already registered in the class
-        $existingRegistration = Registration::where('student_id', $request->student_id)
-            ->where('class_id', $request->class_id)
+        $existingRegistration = Registration::where('student_id', $student_id)
+            ->where('class_id', $class_id)
             ->first();
         if ($existingRegistration) {
             return response()->json([
@@ -213,7 +203,7 @@ class RegistrationController extends Controller
             ], 409);
         }
         // Check if the class is full
-        $class = ClassModel::find($request->class_id);
+        $class = ClassModel::find($class_id);
         if ($class->registeredStudents()->count() >= $class->capacity) {
             return response()->json([
                 'message' => 'Class is full',
@@ -228,8 +218,8 @@ class RegistrationController extends Controller
         }
 
         // Check if the student is already registered in another class at the same time
-        $overlappingClass = Registration::where('student_id', $request->student_id)
-        ->where('class_id', '!=', $request->class_id)
+        $overlappingClass = Registration::where('student_id', $student_id)
+        ->where('class_id', '!=', $class_id)
         ->whereHas('class', function ($query) use ($class) {
             $query->whereBetween('start_date', [$class->start_date, $class->end_date])
                   ->orWhereBetween('end_date', [$class->start_date, $class->end_date]);
@@ -242,7 +232,11 @@ class RegistrationController extends Controller
         }
 
         try{
-            $registration->update($request->all());
+            $registration->update([
+                    'student_id' => $student_id,
+                    'class_id' => $class_id,
+                    'registration_date' => now(),
+                ]);
 
             return response()->json([
                 'status' => true,
@@ -263,10 +257,10 @@ class RegistrationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $term_id,string $class_id,string $registration_id)
     {
         try{
-            $registration = Registration::findOrFail($id);
+            $registration = Registration::findOrFail($registration_id);
 
         }catch(\Exception $e){
             return response()->json([

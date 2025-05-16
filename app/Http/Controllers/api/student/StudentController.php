@@ -13,11 +13,9 @@ class StudentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(User $user)
+    public function index(Student $student)
     {
-        $students = $user::with('roles')->get()->filter(
-            fn ($user) => $user->roles->where('name','student')->toArray()
-        );
+        $students = $student::with('user')->get();
 
         if($students->isEmpty())
         {
@@ -91,11 +89,23 @@ class StudentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Student $student)
+    public function show(Student $student , string $id)
     {
-        //
+        try{
+            $student = $student->with('user')->findOrFail($id);
+            return response()->json([
+                'status' => true,
+                'message' => 'student retrieved successfully',
+                'data' => $student
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => 'student not found',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
-
     /**
      * Show the form for editing the specified resource.
      */
@@ -135,9 +145,9 @@ class StudentController extends Controller
 
         $student->update($request->validate([
             'parent1_name' => 'required|string',
-            'parent1_phone' => ['required','regex:/^(0|\+98)[0-9]{10}$/'],
+            'parent1_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
             'parent2_name' => 'required|string',
-            'parent2_phone' => ['required','regex:/^(0|\+98)[0-9]{10}$/'],
+            'parent2_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
         ]));
 
         if($student)

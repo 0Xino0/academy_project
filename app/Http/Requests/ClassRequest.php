@@ -27,7 +27,6 @@ class ClassRequest extends FormRequest
             'teacher_id' => 'required|exists:teachers,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'term' => 'required|string|max:50',
             'capacity' => 'required|integer|min:1',
             'tuition_fee' => 'required|numeric|min:0',
         ];

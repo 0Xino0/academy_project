@@ -38,7 +38,7 @@ class AuthController extends Controller
       public function register(RegistrationRequest $request)
       {
 
-        $this->authorize('create' , User::class);
+        // $this->authorize('create' , User::class);
 
         $request->validated();
         
@@ -51,7 +51,7 @@ class AuthController extends Controller
             'password' =>  Hash::make($request->password) 
         ]);
 
-        $user->syncRoles($request->roles);
+        $user->assignRole('student');
         if($user)
         {
             $token = auth()->login($user);
