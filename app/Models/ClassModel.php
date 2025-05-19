@@ -63,5 +63,10 @@ class ClassModel extends Model
     {
         return $this->belongsTo(Term::class);
     }
+
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class);
+    }
 }
 

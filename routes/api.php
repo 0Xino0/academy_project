@@ -4,6 +4,7 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Contracts\Role;
 use App\Http\Controllers\TermController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\api\user\UserController;
 use App\Http\Controllers\api\class\ClassController;
 use App\Http\Controllers\api\grade\GradeController;
@@ -86,11 +87,17 @@ Route::post('v1/terms/{term_id}/classes/{class_id}/registrations',[RegistrationC
 Route::get('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'show']);
 Route::delete('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'destroy']);
 
-Route::post('v1/classes/{class_id}/grades/batch',[GradeController::class,'batchStoreOrUpdate']);
-Route::post('v1/classes/{class_id}/grades',[GradeController::class,'storeOrUpdate']);
-Route::get('v1/classes/{class_id}/grades',[GradeController::class,'index']);
-Route::get('v1/me/classes/{class_id}/grades',[GradeController::class,'showForStudent']);
+Route::post('v1/classes/{class_id}/grades/batch',[GradeController::class,'batchStoreOrUpdate']); //teacher
+Route::post('v1/classes/{class_id}/grades',[GradeController::class,'storeOrUpdate']); //teacher
+Route::get('v1/classes/{class_id}/grades',[GradeController::class,'index']); //admin or teacher
+Route::get('v1/me/classes/{class_id}/grades',[GradeController::class,'showForStudent']); //student
 
+Route::post('v1/terms/{term_id}/classes/{class_id}/schedules',[ScheduleController::class,'store']); // admin
+Route::get('v1/terms/{term_id}/schedules',[ScheduleController::class,'index']); // admin
+Route::get('v1/me/teaching-terms/{term_id}/schedules',[ScheduleController::class,'indexForTeacher']); // teacher   
+Route::get('v1/me/studying-terms/{term_id}/schedules',[ScheduleController::class,'indexForStudent']); // student
+Route::put('v1/terms/{term_id}/classes/{class_id}/schedules/{schedule_id}',[ScheduleController::class,'update']); // admin
+Route::delete('v1/terms/{term_id}/classes/{class_id}/schedules/{schedule_id}',[ScheduleController::class,'destroy']); // admin
 
 
 
