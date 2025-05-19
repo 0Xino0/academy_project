@@ -42,7 +42,7 @@ Route::put('v1/roles/{id}/permissions', [RoleController::class, 'givePermissions
 Route::delete('v1/roles/{id}/permissions', [RoleController::class, 'revokePermissionFromRole']);
 
 Route::get('v1/users', [UserController::class, 'index']);
-Route::post('v1/users', [UserController::class, 'store']);
+Route::post('v1/users', [UserController::class, 'store']); // create user with teacher role
 Route::get('v1/users/{id}', [UserController::class, 'show']);
 Route::put('v1/users/{id}', [UserController::class, 'update']);
 Route::delete('v1/users/{id}', [UserController::class, 'destroy']);
@@ -72,16 +72,26 @@ Route::put('v1/terms/{id}',[TermController::class,'update']);
 Route::delete('v1/terms/{id}',[TermController::class,'destroy']);
 
 Route::get('v1/terms/{term_id}/classes',[ClassController::class,'index']);
+Route::get('v1/me/teaching-terms/{term_id}/classes',[ClassController::class,'indexForTeacher']);
+Route::get('v1/me/studying-terms/{term_id}/classes',[ClassController::class,'indexForStudent']);
 Route::post('v1/terms/{term_id}/classes',[ClassController::class,'store']);
 Route::get('v1/terms/{term_id}/classes/{class_id}',[ClassController::class,'show']);
+Route::get('v1/me/teaching-terms/{term_id}/classes/{class_id}',[ClassController::class,'showForTeacher']);
+Route::get('v1/me/studying-terms/{term_id}/classes/{class_id}',[ClassController::class,'showForStudent']);
 Route::put('v1/terms/{term_id}/classes/{class_id}',[ClassController::class,'update']);
 Route::delete('v1/terms/{term_id}/classes/{class_id}',[ClassController::class,'destroy']);
 
 Route::get('v1/terms/{term_id}/classes/{class_id}/registrations',[RegistrationController::class,'index']);
 Route::post('v1/terms/{term_id}/classes/{class_id}/registrations',[RegistrationController::class,'store']);
 Route::get('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'show']);
-Route::put('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'update']);
 Route::delete('v1/terms/{term_id}/classes/{class_id}/registrations/{registration_id}',[RegistrationController::class,'destroy']);
+
+Route::post('v1/classes/{class_id}/grades/batch',[GradeController::class,'batchStoreOrUpdate']);
+Route::post('v1/classes/{class_id}/grades',[GradeController::class,'storeOrUpdate']);
+Route::get('v1/classes/{class_id}/grades',[GradeController::class,'index']);
+Route::get('v1/me/classes/{class_id}/grades',[GradeController::class,'showForStudent']);
+
+
 
 
 require __DIR__ . '/auth.php';
