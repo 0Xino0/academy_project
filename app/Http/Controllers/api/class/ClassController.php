@@ -36,6 +36,38 @@ class ClassController extends Controller
         } 
     }
 
+    public function indexForStudent(string $term_id)
+    {
+        $student_id = auth()->user()->student->id;
+        $classes = ClassModel::with(['course', 'teacher.user','term'])
+        ->where('term_id',$term_id)
+        ->whereHas('registrations', function($query) use ($student_id) {
+            $query->where('student_id', $student_id);
+        })
+        ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Data fetched successfully',
+            'classes' => $classes,
+        ]);
+    }
+
+    public function indexForTeacher(string $term_id)
+    {
+        $teacher_id = auth()->user()->teacher->id;
+
+        $classes = ClassModel::with(['course', 'teacher.user','term'])
+        ->where('term_id',$term_id)
+        ->where('teacher_id',$teacher_id)
+        ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Data fetched successfully',
+            'classes' => $classes,
+        ]);
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -115,6 +147,57 @@ class ClassController extends Controller
         }
     }
 
+    public function showForTeacher(string $term_id,string $class_id)
+    {
+        $teacher_id = auth()->user()->teacher->id;
+
+        try{
+            $class = ClassModel::with(['course', 'teacher.user','term','registrations.student.user'])
+                            ->where('id',$class_id)
+                            ->where('term_id',$term_id)
+                            ->where('teacher_id',$teacher_id)
+                            ->first();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data fetched successfully',
+                'class' => $class,
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching data',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+        
+    }
+
+    public function showForStudent(string $term_id,string $class_id)
+    {
+        $student_id = auth()->user()->student->id;
+
+        try{    
+            $class = ClassModel::with(['course', 'teacher.user','term'])
+                                ->where('id',$class_id)
+                                ->where('term_id',$term_id)
+                                ->whereHas('registrations', function($query) use ($student_id) {
+                                    $query->where('student_id', $student_id);
+                                })
+                                ->first();
+            return response()->json([
+                'status' => true,
+                'message' => 'Data fetched successfully',
+                'class' => $class,
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching data',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     /**
      * Show the form for editing the specified resource.
      */
