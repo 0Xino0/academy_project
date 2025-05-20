@@ -64,6 +64,33 @@ class AuthController extends Controller
         }
       }
 
+      public function registerAdmin(RegistrationRequest $request)
+      {
+        $request->validated();
+        
+        $user = User::create([
+            'national_id' => $request->national_id,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'password' =>  Hash::make($request->password) 
+        ]);
+
+        $user->assignRole('manager');
+
+        if($user)
+        {
+            $token = auth()->login($user);
+            return $this->responseWithToken($token,$user);
+        }else{
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'An error occurred while registering'
+            ],500);
+        }
+      }
+
       public function responseWithToken($token,$user)
       {
         return response()->json([
