@@ -13,9 +13,9 @@ class Teacher extends Model
 
     protected $fillable = [
         'salary',
-        'join_date',
-        'leave_date',
+        'bio',
         'resume',
+        'degree',
         'user_id'
     ];
 

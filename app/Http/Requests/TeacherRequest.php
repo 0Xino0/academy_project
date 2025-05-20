@@ -24,8 +24,8 @@ class TeacherRequest extends FormRequest
         return [
             'salary' => 'required|integer',
             'resume' => 'nullable|string',
-            'join_date' => 'required|date',
-            'leave_date' => 'nullable|date',
+            'bio' => 'nullable|string',
+            'degree' => 'required|string',
             'user_id' => 'required|unique:teachers,user_id'
         ];
     }

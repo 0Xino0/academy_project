@@ -74,10 +74,10 @@ class StudentController extends Controller
         $request->validated();
         $student = Student::create([
             'user_id' => $request->user_id,
-            'parent1_name' => $request->parent1_name,
-            'parent1_phone' => $request->parent1_phone,
-            'parent2_name' => $request->parent2_name,
-            'parent2_phone' => $request->parent2_phone
+            'father_name' => $request->father_name,
+            'father_phone' => $request->father_phone,
+            'mother_name' => $request->mother_name,
+            'mother_phone' => $request->mother_phone
         ]);
 
         if($student)
@@ -145,20 +145,7 @@ class StudentController extends Controller
      */
     public function edit(Student $student, string $id)
     {
-        try{
-            $user = $student->findOrFail($id);
-            return response()->json([
-                'status' => true,
-                'message' => 'student retrieved successfully',
-                'data' => $user
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'no student found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        //
     }
 
     /**
@@ -178,10 +165,10 @@ class StudentController extends Controller
         }
 
         $student->update($request->validate([
-            'parent1_name' => 'required|string',
-            'parent1_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
-            'parent2_name' => 'required|string',
-            'parent2_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
+            'father_name' => 'required|string',
+            'father_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
+            'mother_name' => 'required|string',
+            'mother_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
         ]));
 
         if($student)

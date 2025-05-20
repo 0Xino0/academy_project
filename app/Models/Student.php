@@ -12,10 +12,10 @@ class Student extends Model
     use HasFactory,SoftDeletes;
 
     protected $fillable=[
-        'parent1_name',
-        'parent1_phone',
-        'parent2_name',
-        'parent2_phone',
+        'father_name',
+        'father_phone',
+        'mother_name',
+        'mother_phone',
         'user_id'
     ];
 
