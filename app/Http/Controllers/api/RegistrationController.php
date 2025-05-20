@@ -112,7 +112,6 @@ class RegistrationController extends Controller
             $registration = Registration::create([
                 'student_id' => $student_id,
                 'class_id' => $class_id,
-                'registration_date' => now(),
             ]);
     
             // create debt

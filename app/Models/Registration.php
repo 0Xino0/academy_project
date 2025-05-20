@@ -9,12 +9,10 @@ class Registration extends Model
 {
     use HasFactory;
 
-    public $timestamps = false;
 
     protected $fillable = [
         'student_id',
         'class_id',
-        'registration_date',
     ];
 
     public function class()
