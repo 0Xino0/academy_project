@@ -3,16 +3,18 @@
 use App\Models\Student;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Contracts\Role;
-use App\Http\Controllers\TermController;
-use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\api\user\UserController;
-use App\Http\Controllers\api\class\ClassController;
-use App\Http\Controllers\api\grade\GradeController;
-use App\Http\Controllers\api\course\CourseController;
-use App\Http\Controllers\api\student\StudentController;
-use App\Http\Controllers\api\teacher\TeacherController;
+use App\Http\Controllers\api\DebtController;
+use App\Http\Controllers\api\TermController;
+use App\Http\Controllers\api\PaymentController;
+use App\Http\Controllers\api\ScheduleController;
+use App\Http\Controllers\api\UserController;
+use App\Http\Controllers\api\ClassController;
+use App\Http\Controllers\api\GradeController;
+use App\Http\Controllers\api\CourseController;
+use App\Http\Controllers\api\StudentController;
+use App\Http\Controllers\api\TeacherController;
 use App\Http\Controllers\api\role_permission\RoleController;
-use App\Http\Controllers\api\registration\RegistrationController;
+use App\Http\Controllers\api\RegistrationController;
 use App\Http\Controllers\api\role_permission\PermissionController;
 
 /*
@@ -54,8 +56,10 @@ Route::put('v1/teachers/{id}/admin-info', [TeacherController::class, 'updateAdmi
 Route::put('v1/teachers/{id}',[TeacherController::class,'update']); // Updating data from the teacher that the teacher must have access to
 Route::delete('v1/teachers/{id}',[TeacherController::class,'destroy']);
 
+Route::get('v1/classes/{class_id}/students',[StudentController::class,'indexPerClasses']);
 Route::get('v1/students',[StudentController::class,'index']);
 Route::post('v1/students',[StudentController::class,'store']);
+Route::get('v1/classes/{class_id}/students/{student_id}',[StudentController::class,'showPerClass']);
 Route::get('v1/students/{id}',[StudentController::class,'show']);
 Route::put('v1/students/{id}',[StudentController::class,'update']);
 Route::delete('v1/students/{id}',[StudentController::class,'destroy']);
@@ -98,6 +102,14 @@ Route::get('v1/me/teaching-terms/{term_id}/schedules',[ScheduleController::class
 Route::get('v1/me/studying-terms/{term_id}/schedules',[ScheduleController::class,'indexForStudent']); // student
 Route::put('v1/terms/{term_id}/classes/{class_id}/schedules/{schedule_id}',[ScheduleController::class,'update']); // admin
 Route::delete('v1/terms/{term_id}/classes/{class_id}/schedules/{schedule_id}',[ScheduleController::class,'destroy']); // admin
+
+Route::get('v1/debts',[DebtController::class,'index']);
+Route::get('v1/students/{student_id}/debts',[DebtController::class,'show']);
+
+Route::get('v1/payments',[PaymentController::class,'index']);
+Route::post('v1/debts/{debt_id}/payments',[PaymentController::class,'store']);
+Route::get('v1/payments/{payment_id}',[PaymentController::class,'show']);
+
 
 
 

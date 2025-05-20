@@ -26,4 +26,9 @@ class Registration extends Model
     {
         return $this->belongsTo(Student::class,'student_id');
     }
+
+    public function debt()
+    {
+        return $this->hasOne(Debt::class);
+    }
 }
