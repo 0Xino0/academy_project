@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\api;
 
 use App\Models\Term;
 use Illuminate\Http\Request;
 use App\Http\Requests\TermRequest;
+use App\Http\Controllers\Controller;
 
 class TermController extends Controller
 {

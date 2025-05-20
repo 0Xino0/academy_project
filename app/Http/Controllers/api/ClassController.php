@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api\class;
+namespace App\Http\Controllers\api;
 use App\Models\Term;
 
 use App\Models\User;

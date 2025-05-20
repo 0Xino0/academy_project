@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api\grade;
+namespace App\Http\Controllers\api;
 
 use App\Models\Grade;
 use App\Models\ClassModel;

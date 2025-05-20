@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api\student;
+namespace App\Http\Controllers\api;
 
 use App\Models\User;
 use App\Models\Student;
@@ -13,9 +13,34 @@ class StudentController extends Controller
     /**
      * Display a listing of the resource.
      */
+
     public function index(Student $student)
     {
         $students = $student::with('user')->get();
+
+        if($students->isEmpty())
+        {
+            return response()->json([
+                'status' => false,
+                'message' => 'no students found',
+                'data' => null
+            ]);
+        }else{
+            return response()->json([
+                'status' => true,
+                'message' => 'student retrieved successfully',
+                'data' => $students
+            ]);
+        }
+    }
+    
+    public function indexPerClasses(Student $student,string $class_id)
+    {
+        $students = $student::with(['user','class','registration'])
+                            ->whereHas('registration',function($query) use ($class_id){
+                                $query->where('class_id',$class_id);
+                            })
+                            ->get();
 
         if($students->isEmpty())
         {
@@ -38,21 +63,7 @@ class StudentController extends Controller
      */
     public function create(string $id)
     {
-        try{
-            $user = User::findOrFail($id);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'student retrieved successfully',
-                'data' => $user
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'student not found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        //
     }
 
     /**
@@ -89,10 +100,33 @@ class StudentController extends Controller
     /**
      * Display the specified resource.
      */
+
     public function show(Student $student , string $id)
     {
         try{
             $student = $student->with('user')->findOrFail($id);
+            return response()->json([
+                'status' => true,
+                'message' => 'student retrieved successfully',
+                'data' => $student
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => 'student not found',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function showPerClass(Student $student , string $class_id, string $student_id)
+    {
+        try{
+            $student = $student->with(['user','class','registration'])
+                                ->whereHas('registration',function($query) use ($class_id){
+                                    $query->where('class_id',$class_id);
+                                })
+                                ->findOrFail($student_id);
             return response()->json([
                 'status' => true,
                 'message' => 'student retrieved successfully',
