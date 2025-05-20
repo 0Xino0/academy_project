@@ -21,8 +21,9 @@ class TeacherFactory extends Factory
     {
         return [
             'salary' => fake()->numerify('###000'),
-            'join_date' => fake()->dateTimeThisMonth(),
-            'resume' => fake()->sentence()
+            'bio' => fake()->sentence(),
+            'resume' => fake()->sentence(),
+            'degree' => fake()->randomElement(['bachelor','master','phd']),
         ];
     }
 }

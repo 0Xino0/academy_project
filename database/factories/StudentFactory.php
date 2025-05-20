@@ -20,10 +20,10 @@ class StudentFactory extends Factory
     public function definition(): array
     {
         return [
-            'parent1_name' => fake()->name(),
-            'parent1_phone' => fake()->regexify('(0|\+98)(9)[0-9]{9}'),
-            'parent2_phone' => fake()->regexify('(0|\+98)(9)[0-9]{9}'),
-            'parent2_name' => fake()->name()
+            'father_name' => fake()->name(),
+            'father_phone' => fake()->regexify('(\+98)(9)[0-9]{9}'),
+            'mother_phone' => fake()->regexify('(\+98)(9)[0-9]{9}'),
+            'mother_name' => fake()->name()
         ];
     }
 }

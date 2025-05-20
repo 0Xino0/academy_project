@@ -30,9 +30,9 @@ class UserFactory extends Factory
             'national_id' => fake()->numerify('##########'),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
-            'phone' => fake()->regexify('(0|\+98)(9)[0-9]{9}'),
+            'phone' => fake()->regexify('(\+98)(9)[0-9]{9}'),
             'email' => fake()->unique()->safeEmail(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => static::$password ??= Hash::make('12345678'),
             'remember_token' => Str::random(10),
         ];
     }
