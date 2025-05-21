@@ -62,6 +62,14 @@ class RegistrationController extends Controller
             ], 409);
         }
 
+        // Check if current time is within registration period
+        if (now() < $class->startRegistration_date || now() > $class->endRegistration_date) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Registration period has ended or has not started yet',
+            ], 409);
+        }
+
         // Check if the student is already registered in the class
         $existingRegistration = Registration::where('student_id', $student_id)
             ->where('class_id', $class_id)
