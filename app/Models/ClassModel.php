@@ -21,6 +21,8 @@ class ClassModel extends Model
         'teacher_id',
         'start_date',
         'end_date',
+        'startRegistration_date',
+        'endRegistration_date',
         'term_id',
         'capacity',
         'tuition_fee',
