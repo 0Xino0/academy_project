@@ -97,7 +97,9 @@ class AuthController extends Controller
             'status' => 'success',
             'access_token' => $token,
             'token_type' => 'bearer',
-            'user' => $user
+            'expires_in' => auth()->factory()->getTTL() * 60,
+            'user' => $user->with('roles')->where('id',$user->id)->first(),
+
         ], 200);
       }
 
@@ -108,5 +110,11 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => 'Logged out successfully'
         ], 200);
+      }
+
+      public function refresh()
+      {
+        $token = auth()->refresh();
+        return $this->responseWithToken($token, auth()->user());
       }
     }
