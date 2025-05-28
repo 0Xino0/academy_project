@@ -16,12 +16,14 @@ class TermController extends Controller
     {
         try{
             $terms = Term::get();
-            return response()->json([
+            return response()->json([             
+                'status' => true,
                 'message' => 'Terms fetched successfully',
                 'terms' => $terms
             ], 200);
         }catch(\Exception $e){
             return response()->json([
+                'status' => false,
                 'message' => 'Error fetching terms',
                 'error' => $e->getMessage(),
             ], 500);
@@ -44,11 +46,13 @@ class TermController extends Controller
         try{
             $term = Term::create($request->validated());
             return response()->json([
+                'status' => true,
                 'message' => 'Term created successfully',
-                'term' => $term
+                'term' => $term,
             ], 201);
         }catch(\Exception $e){
             return response()->json([
+                'status' => false,
                 'message' => 'Error creating term',
                 'error' => $e->getMessage(),
             ], 500);
@@ -63,11 +67,13 @@ class TermController extends Controller
         try{
             $term = Term::findOrFail($id);
             return response()->json([
+                'status' => true,
                 'message' => 'Term fetched successfully',
                 'term' => $term
             ], 200);
         }catch(\Exception $e){
             return response()->json([
+                'status' => false,
                 'message' => 'Error fetching term',
                 'error' => $e->getMessage(),
             ], 500);
@@ -91,11 +97,13 @@ class TermController extends Controller
             $term = Term::findOrFail($id);
             $term->update($request->validated());
             return response()->json([
+                'status' => true,
                 'message' => 'Term updated successfully',
                 'term' => $term
             ], 200);
         }catch(\Exception $e){
             return response()->json([
+                'status' => false,
                 'message' => 'Error updating term',
                 'error' => $e->getMessage(),
             ], 500);
@@ -111,10 +119,12 @@ class TermController extends Controller
             $term = Term::findOrFail($id);
             $term->delete();
             return response()->json([
+                'status' => true,
                 'message' => 'Term deleted successfully',
             ], 200);
         }catch(\Exception $e){
             return response()->json([
+                'status' => false,
                 'message' => 'Error deleting term',
                 'error' => $e->getMessage(),
             ], 500);

@@ -99,6 +99,28 @@ class ClassController extends Controller
                 ], 422);
             }
 
+            // Validate registration dates
+            if ($data['startRegistration_date'] >= $data['start_date']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Registration start date must be before class start date'
+                ], 422);
+            }
+
+            if ($data['endRegistration_date'] <= $data['startRegistration_date']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Registration end date must be after registration start date'
+                ], 422);
+            }
+
+            if ($data['endRegistration_date'] >= $data['start_date']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Registration end date must be before class start date'
+                ], 422);
+            }
+
             // check class status is active or not
             if($term->is_active == 0){
                 return response()->json([
@@ -112,7 +134,7 @@ class ClassController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Class created successfully',
-                'class' => $class->with('course','teacher','term')->where('id',$class->id)->first(),
+                'class' => $class->with('course','teacher.user','term')->where('id',$class->id)->first(),
             ]);
 
         }catch(\Exception $e){
@@ -213,7 +235,53 @@ class ClassController extends Controller
     {
         try{
             $class = ClassModel::with(['course', 'teacher.user','term'])->where('id',$class_id)->where('term_id',$term_id)->first();
-            $class->update($request->validated());
+            $term = Term::findOrFail($term_id);
+            
+            $data = $request->validated();
+
+            // check class status is active or not
+            if($term->is_active == 0){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Term is not active',
+                ], 422);
+            }
+
+            // Check if class dates are within term dates
+            if ($data['start_date'] < $term->start_date || $data['end_date'] > $term->end_date) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Class dates must be within the term dates',
+                    'term_dates' => [
+                        'start_date' => $term->start_date,
+                        'end_date' => $term->end_date
+                    ]
+                ], 422);
+            }
+
+            // Validate registration dates
+            if ($data['startRegistration_date'] >= $data['start_date']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Registration start date must be before class start date'
+                ], 422);
+            }
+
+            if ($data['endRegistration_date'] <= $data['startRegistration_date']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Registration end date must be after registration start date'
+                ], 422);
+            }
+
+            if ($data['endRegistration_date'] >= $data['start_date']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Registration end date must be before class start date'
+                ], 422);
+            }
+
+            $class->update($data);
 
             return response()->json([
                 'status' => true,
@@ -243,6 +311,7 @@ class ClassController extends Controller
                 return response()->json([
                     'status' => true,
                     'message' => 'Class deleted successfully',
+                    'error' => null,
                 ]);
             }
 
