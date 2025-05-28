@@ -32,6 +32,8 @@ class RegistrationController extends Controller
         ->get();
 
         return response()->json([
+            'status' => true,
+            'message' => 'registations data fetch successfully',
             'registrations' => $registrations
         ]);
     }
@@ -132,15 +134,16 @@ class RegistrationController extends Controller
             DB::commit();
     
             return response()->json([
+                'status' => true,
                 'message' => 'Registration and debt created successfully',
-                'registration' => $registration,
-                'debt' => $registration->load('debt')
+                'registration' => $registration->load('debt'),
             ], 201);
     
         } catch (\Exception $e) {
             DB::rollBack();
     
             return response()->json([
+                'status' => true,
                 'message' => 'Error during registration',
                 'error' => $e->getMessage(),
             ], 500);
@@ -222,12 +225,14 @@ class RegistrationController extends Controller
         {
             return response()->json([
                 'status' => true,
-                'message' => 'registration deleted successfully'
+                'message' => 'registration deleted successfully',
+                'error' => null
             ]);
         }else{
             return response()->json([
                 'status' => false,
-                'message' => 'error while deleting registration'
+                'message' => 'error while deleting registration',
+                'error' => null
             ]);
         }
         

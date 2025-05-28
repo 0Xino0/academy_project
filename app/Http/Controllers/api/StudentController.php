@@ -36,8 +36,8 @@ class StudentController extends Controller
     
     public function indexPerClasses(Student $student,string $class_id)
     {
-        $students = $student::with(['user','class','registration'])
-                            ->whereHas('registration',function($query) use ($class_id){
+        $students = $student::with(['user'])
+                            ->whereHas('registrations',function($query) use ($class_id){
                                 $query->where('class_id',$class_id);
                             })
                             ->get();
@@ -211,11 +211,13 @@ class StudentController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Student deleted successfully.',
+                'error' => null
             ]);
         }else{
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while deleting the Student.',
+                'error' => null
             ]);
         }
     }
