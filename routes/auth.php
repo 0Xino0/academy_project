@@ -10,7 +10,9 @@ Route::post('v1/auth/login', [AuthController::class , 'login']);
 Route::post('v1/auth/refresh', [AuthController::class, 'refresh']);
 
 
-Route::middleware('auth')->group(function(){
+
+Route::middleware('auth:api')->group(function(){
     Route::post('v1/auth/logout', [AuthController::class,'logout']);
     Route::post('v1/changepassword',[ChangePasswordController::class, 'changeUserPassword']);
+    
 });

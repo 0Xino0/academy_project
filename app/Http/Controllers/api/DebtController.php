@@ -49,9 +49,12 @@ class DebtController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Debt $debt , string $student_id)
+    public function show(Debt $debt)
     {
+        
         try{
+            $student_id = auth()->user()->student->id;
+            
             $debt = $debt->with('registration.student.user','registration.class')
                             ->whereHas('registration.student',function($query) use ($student_id){
                                 $query->where('id',$student_id);
@@ -62,6 +65,7 @@ class DebtController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'debt not found',
+                    'error' => null
                 ],404);
             }
             return response()->json([

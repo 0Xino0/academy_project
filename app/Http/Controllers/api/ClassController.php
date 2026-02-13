@@ -39,7 +39,9 @@ class ClassController extends Controller
     public function indexForStudent(string $term_id)
     {
         $student_id = auth()->user()->student->id;
-        $classes = ClassModel::with(['course', 'teacher.user','term'])
+        $classes = ClassModel::with(['course', 'teacher.user', 'term', 'registrations' => function($query) use ($student_id) {
+            $query->where('student_id', $student_id);
+        }])
         ->where('term_id',$term_id)
         ->whereHas('registrations', function($query) use ($student_id) {
             $query->where('student_id', $student_id);
@@ -200,13 +202,15 @@ class ClassController extends Controller
         $student_id = auth()->user()->student->id;
 
         try{    
-            $class = ClassModel::with(['course', 'teacher.user','term'])
-                                ->where('id',$class_id)
-                                ->where('term_id',$term_id)
-                                ->whereHas('registrations', function($query) use ($student_id) {
-                                    $query->where('student_id', $student_id);
-                                })
-                                ->first();
+            $class = ClassModel::with(['course', 'teacher.user', 'term', 'registrations' => function($query) use ($student_id) {
+                $query->where('student_id', $student_id);
+            }])
+            ->where('id',$class_id)
+            ->where('term_id',$term_id)
+            ->whereHas('registrations', function($query) use ($student_id) {
+                $query->where('student_id', $student_id);
+            })
+            ->first();
             return response()->json([
                 'status' => true,
                 'message' => 'Data fetched successfully',

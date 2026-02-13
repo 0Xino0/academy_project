@@ -110,7 +110,7 @@ class GradeController extends Controller
         try{
             $student_id = auth()->user()->student->id;
             
-            $grade = Grade::with('student.user')
+            $grade = Grade::with(['student.user','class.teacher.user'])
                             ->where('class_id', $class_id)
                             ->where('student_id', $student_id)
                             ->first();
@@ -118,6 +118,7 @@ class GradeController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Grade not found',
+                    'error' => null
                 ], 404);
             }
             return response()->json([

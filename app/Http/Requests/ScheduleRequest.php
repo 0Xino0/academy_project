@@ -23,8 +23,8 @@ class ScheduleRequest extends FormRequest
     {
         return [
             'day_of_week' => 'required|string',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
+            'start_time' => 'required|date_format:h:i A',
+            'end_time' => 'required|date_format:h:i A',
         ];
     }
 }

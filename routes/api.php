@@ -28,6 +28,8 @@ use App\Http\Controllers\api\role_permission\PermissionController;
 |
 */
 
+Route::middleware('auth:api')->group(function(){
+
 Route::get('v1/permissions', [PermissionController::class, 'index']);
 Route::post('v1/permissions', [PermissionController::class, 'store']);
 Route::get('v1/permissions/{id}', [PermissionController::class, 'show']);
@@ -104,11 +106,13 @@ Route::put('v1/terms/{term_id}/classes/{class_id}/schedules/{schedule_id}',[Sche
 Route::delete('v1/terms/{term_id}/classes/{class_id}/schedules/{schedule_id}',[ScheduleController::class,'destroy']); // admin
 
 Route::get('v1/debts',[DebtController::class,'index']);
-Route::get('v1/students/{student_id}/debts',[DebtController::class,'show']);
+Route::get('v1/me/students/debts',[DebtController::class,'show']);
 
 Route::get('v1/payments',[PaymentController::class,'index']);
 Route::post('v1/debts/{debt_id}/payments',[PaymentController::class,'store']);
 Route::get('v1/payments/{payment_id}',[PaymentController::class,'show']);
+
+});
 
 
 

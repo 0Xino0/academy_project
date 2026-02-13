@@ -16,11 +16,7 @@ class ScheduleController extends Controller
     public function index($term_id)
     {
         try {
-            $schedules = Schedule::with(['class:id,name,start_date,end_date,teacher_id,course_id,term_id',
-                                        'class.course:id,title,level',
-                                        'class.teacher:id,user_id',
-                                        'class.teacher.user:id,first_name,last_name,national_id',
-                                        'class.term:id,year,season,is_active'])
+            $schedules = Schedule::with(['class'])
                     ->whereHas('class', function($query) use ($term_id) {
                         $query->where('term_id', $term_id);
                     })
@@ -44,9 +40,7 @@ class ScheduleController extends Controller
     {
         try{
             $teacher_id = auth()->user()->teacher->id;
-            $schedules = Schedule::with(['class:id,name,start_date,end_date,teacher_id,course_id,term_id',
-                                        'class.course:id,title,level',
-                                        'class.term:id,year,season,is_active'])
+            $schedules = Schedule::with(['class'])
                     ->whereHas('class', function($query) use ($teacher_id) {
                         $query->where('teacher_id', $teacher_id);
                     })
@@ -81,11 +75,7 @@ class ScheduleController extends Controller
     {
         try{
             $student_id = auth()->user()->student->id;
-            $schedules = Schedule::with(['class:id,name,start_date,end_date,teacher_id,course_id,term_id',
-                                        'class.course:id,title,level',
-                                        'class.teacher:id,user_id',
-                                        'class.teacher.user:id,first_name,last_name,national_id',
-                                        'class.term:id,year,season,is_active'])
+            $schedules = Schedule::with(['class'])
                     ->whereHas('class.registrations', function($query) use ($student_id) {
                         $query->where('student_id', $student_id);
                     })
@@ -176,7 +166,7 @@ class ScheduleController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Schedule created successfully',
-                'schedule' => $schedule
+                'schedule' => $schedule->with('class')->where('id', $schedule->id)->first()
             ]);
 
         } catch (\Exception $e) {
@@ -299,7 +289,8 @@ class ScheduleController extends Controller
             if(!$schedule){
                 return response()->json([
                     'status' => false,
-                    'message' => 'Schedule not found'
+                    'message' => 'Schedule not found',
+                    'schedule' => null
                 ], 404);
             }
 
@@ -307,7 +298,8 @@ class ScheduleController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Schedule deleted successfully'
+                'message' => 'Schedule deleted successfully',
+                'schedule' => null
             ]);
         }catch(\Exception $e){
             return response()->json([
