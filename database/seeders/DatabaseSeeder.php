@@ -13,10 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create Roles
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'api']);
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'api']);
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'student', 'guard_name' => 'api']);
+        // Call the RolePermissionSeeder to set up roles and permissions first
+        $this->call(RolePermissionSeeder::class);
 
         // Create Admin
         $admin = User::factory()->create([
