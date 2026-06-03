@@ -38,5 +38,11 @@ class DatabaseSeeder extends Seeder
         foreach ($students as $student) {
              $student->assignRole('student');
         }
+
+        // Call seeders to create corresponding Teacher and Student profile records
+        $this->call([
+            TeacherSeeder::class,
+            StudentSeeder::class,
+        ]);
     }
 }
