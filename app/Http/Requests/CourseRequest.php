@@ -23,7 +23,7 @@ class CourseRequest extends FormRequest
     {
         return [
             'title' => 'required|string',
-            'level' => 'required|string|in:beginner,intermediate,advanced',
+            'level' => 'required|string|in:Beginner,Intermediate,Advanced',
             'description' => 'nullable|string'
         ];
     }
