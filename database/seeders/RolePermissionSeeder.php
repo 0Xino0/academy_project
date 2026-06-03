@@ -19,7 +19,7 @@ class RolePermissionSeeder extends Seeder
 
         // 1. Create Roles
         // We use firstOrCreate to avoid errors if they already exist
-        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'api']);
+        $adminRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'api']);
         $teacherRole = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'api']);
         $studentRole = Role::firstOrCreate(['name' => 'student', 'guard_name' => 'api']);
 
