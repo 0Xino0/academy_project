@@ -40,11 +40,13 @@ class UserFactory extends Factory
     public function configure()
     {
         return $this->afterCreating(function(User $user){
+            if ($user->email === 'admin@example.com') {
+                return;
+            }
             $role = Arr::random(['teacher','student']);
             $user->assignRole($role);
         });
     }
-
 
     /**
      * Indicate that the model's email address should be unverified.

@@ -27,17 +27,8 @@ class DatabaseSeeder extends Seeder
         ]);
         $admin->assignRole('admin');
 
-        // Create Teachers (users who will become teachers via TeacherSeeder or manually)
-        $teachers = User::factory()->count(3)->create();
-        foreach ($teachers as $teacher) {
-             $teacher->assignRole('teacher');
-        }
-
-        // Create Students
-        $students = User::factory()->count(10)->create();
-        foreach ($students as $student) {
-             $student->assignRole('student');
-        }
+        // Create 13 users who will automatically get randomly assigned teacher or student roles
+        User::factory()->count(13)->create();
 
         // Call seeders to create corresponding Teacher and Student profile records
         $this->call([
