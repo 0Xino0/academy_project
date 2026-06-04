@@ -19,7 +19,7 @@ return new class extends Migration
             // So NO term_id here.
             $table->date('start_date');
             $table->date('end_date');
-            $table->date('startRegistration_date')->nullable(); // "2025_05_20_224152_add_start_and_end_registration_date_to_classes_table.php"
+            // $table->date('startRegistration_date')->nullable(); // "2025_05_20_224152_add_start_and_end_registration_date_to_classes_table.php"
             // Wait, if it's added later, maybe I shouldn't add it here?
             // "add_start_and_end_registration_date..." 
             // So NO start/end registration here either.
