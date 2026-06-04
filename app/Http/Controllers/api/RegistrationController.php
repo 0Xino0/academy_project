@@ -65,7 +65,7 @@ class RegistrationController extends Controller
         }
 
         // Check if current time is within registration period
-        if (now() < $class->startRegistration_date || now() > $class->endRegistration_date) {
+        if (now() < $class->startRegistration_Date || now() > $class->endRegistration_Date) {
             return response()->json([
                 'status' => false,
                 'message' => 'Registration period has ended or has not started yet',

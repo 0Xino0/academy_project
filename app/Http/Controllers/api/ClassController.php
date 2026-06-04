@@ -102,21 +102,21 @@ class ClassController extends Controller
             }
 
             // Validate registration dates
-            if ($data['startRegistration_date'] >= $data['start_date']) {
+            if ($data['startRegistration_Date'] >= $data['start_date']) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Registration start date must be before class start date'
                 ], 422);
             }
 
-            if ($data['endRegistration_date'] <= $data['startRegistration_date']) {
+            if ($data['endRegistration_Date'] <= $data['startRegistration_Date']) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Registration end date must be after registration start date'
                 ], 422);
             }
 
-            if ($data['endRegistration_date'] >= $data['start_date']) {
+            if ($data['endRegistration_Date'] >= $data['start_date']) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Registration end date must be before class start date'
@@ -264,21 +264,21 @@ class ClassController extends Controller
             }
 
             // Validate registration dates
-            if ($data['startRegistration_date'] >= $data['start_date']) {
+            if ($data['startRegistration_Date'] >= $data['start_date']) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Registration start date must be before class start date'
                 ], 422);
             }
 
-            if ($data['endRegistration_date'] <= $data['startRegistration_date']) {
+            if ($data['endRegistration_Date'] <= $data['startRegistration_Date']) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Registration end date must be after registration start date'
                 ], 422);
             }
 
-            if ($data['endRegistration_date'] >= $data['start_date']) {
+            if ($data['endRegistration_Date'] >= $data['start_date']) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Registration end date must be before class start date'
