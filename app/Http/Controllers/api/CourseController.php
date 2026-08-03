@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 
 use App\Models\Course;
+use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use App\Http\Requests\CourseRequest;
 
@@ -150,6 +151,51 @@ class CourseController extends Controller
                 'status' => false,
                 'message' => 'an error while deleting course'
             ]);
+        }
+    }
+
+    /**
+     * Retrieve all active courses whose registration deadline has not passed.
+     */
+    public function getActiveCourses(Request $request)
+    {
+        try {
+            $classes = ClassModel::with(['course', 'teacher.user', 'schedules'])
+                ->whereHas('term', function ($query) {
+                    $query->where('is_active', true);
+                })
+                ->where('endRegistration_Date', '>=', now()->toDateString())
+                ->withCount('registrations')
+                ->get();
+
+            $data = $classes->map(function ($class) {
+                return [
+                    'id' => $class->id,
+                    'course_name' => $class->course->title,
+                    'teacher_name' => $class->teacher->user->first_name . ' ' . $class->teacher->user->last_name,
+                    'capacity' => $class->capacity,
+                    'registered_students_count' => $class->registrations_count,
+                    'schedules' => $class->schedules->map(function ($schedule) {
+                        return [
+                            'day_of_week' => $schedule->day_of_week,
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                        ];
+                    }),
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Active courses retrieved successfully',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error retrieving active courses',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
