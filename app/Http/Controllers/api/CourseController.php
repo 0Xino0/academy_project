@@ -162,6 +162,7 @@ class CourseController extends Controller
         try {
             $classes = ClassModel::with(['course', 'teacher.user', 'schedules'])
                 ->whereHas('term', function ($query) {
+                    // here we select the last active term
                     $query->where('is_active', true);
                 })
                 ->where('endRegistration_Date', '>=', now()->toDateString())
