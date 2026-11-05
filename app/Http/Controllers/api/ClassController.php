@@ -173,6 +173,9 @@ class ClassController extends Controller
 
     public function showForTeacher(string $term_id,string $class_id)
     {
+        $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
+        $this->authorize('viewAsTeacher', $class);
+
         $teacher_id = auth()->user()->teacher->id;
 
         try{
@@ -199,6 +202,9 @@ class ClassController extends Controller
 
     public function showForStudent(string $term_id,string $class_id)
     {
+        $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
+        $this->authorize('viewAsStudent', $class);
+
         $student_id = auth()->user()->student->id;
 
         try{    

@@ -86,21 +86,14 @@ class TeacherController extends Controller
      */
     public function show(Teacher $teacher,string $id)
     {
-        try{
-            $teacher = $teacher::with('user')->where('id',$id)->first();
-            return response()->json([
-                'status' => true,
-                'message' => 'Teacher retrieved successfully',
-                'data' => $teacher
-            ]);
+        $teacher = Teacher::with('user')->findOrFail($id);
+        $this->authorize('view', $teacher);
 
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Teacher not found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Teacher retrieved successfully',
+            'data' => $teacher,
+        ]);
     }
 
     /**
@@ -116,15 +109,8 @@ class TeacherController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        try{
-            $teacher = Teacher::findOrFail($id);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Teacher not found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        $teacher = Teacher::findOrFail($id);
+        $this->authorize('update', $teacher);
         
 
         $result = $teacher->update($request->validate([

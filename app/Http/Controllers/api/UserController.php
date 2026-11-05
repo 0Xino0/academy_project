@@ -2,14 +2,10 @@
 
 namespace App\Http\Controllers\api;
 
-
 use Exception;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegistrationRequest;
 use App\Models\Teacher;
 
@@ -17,14 +13,6 @@ class UserController extends Controller
 {
     public function Index(User $user)
     {
-        // $this->authorize('view' , User::class);
-        // if(Gate::denies('viewAny' , User::class))
-        // {
-        //     return response()->json([
-        //         'message' => 'You do not have permission to view users'
-        //     ], 403);
-        // }
-
         $users = User::with('roles')->get();
         return response()->json([
             'data' => $users
@@ -33,7 +21,6 @@ class UserController extends Controller
 
     public function create()
     {
-        //
     }
 
     public function store(RegistrationRequest $request)
@@ -61,38 +48,15 @@ class UserController extends Controller
             ]);
         }
     }
-    
 
     public function edit(string $id)
     {
-        // $this->authorize('update' , User::class);
-        // if(Gate::denies('view' , User::class))
-        // {
-        //     return response()->json([
-        //         'message' => 'You do not have permission to view this user'
-        //     ], 403);
-        // }
-        
     }
 
     public function show(string $id)
     {
-        // if(Gate::denies('view' , User::class))
-        // {
-        //     return response()->json([
-        //         'message' => 'You do not have permission to view this user'
-        //     ], 403);
-        // }
-        
-
-        try{
-            $user = User::findOrFail($id);
-        }catch(Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error: '.$e->getMessage(),
-            ], 500);
-        }
+        $user = User::findOrFail($id);
+        $this->authorize('view', $user);
 
         return response()->json([
             'status' => true,
@@ -103,23 +67,8 @@ class UserController extends Controller
 
     public function update(Request $request, string $id)
     {
-        // $this->authorize('update' , User::class);
-        // if(Gate::denies('update' , User::class))
-        // {
-        //     return response()->json([
-        //         'message' => 'You do not have permission to update this user'
-        //     ], 403);
-        // }
-
-        
-        try{
-            $user = User::findOrFail($id);
-        }catch(Exception $e){
-            return response()->json([
-                'status' => false,
-               'message' => 'Error: '.$e->getMessage(),
-            ], 500);
-        }
+        $user = User::findOrFail($id);
+        $this->authorize('update', $user);
 
         $user->update($request->validate([
             'national_id' => 'required|integer|digits:10|unique:users,national_id,'.$user->id,
@@ -139,13 +88,6 @@ class UserController extends Controller
 
     public function destroy(string $id)
     {
-        // $this->authorize('delete' , User::class);
-        // if(Gate::denies('delete' , User::class))
-        // {
-        //     return response()->json([
-        //         'message' => 'You do not have permission to delete this user'
-        //     ], 403);
-        // }
         try{
             $user = User::findOrFail($id);
         }catch(Exception $e){

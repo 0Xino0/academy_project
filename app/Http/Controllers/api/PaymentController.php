@@ -44,8 +44,10 @@ class PaymentController extends Controller
      */
     public function store(PaymentRequest $request , string $debt_id)
     {
+        $debt = Debt::findOrFail($debt_id);
+        $this->authorize('pay', $debt);
+
         try {
-            $debt = Debt::findOrFail($debt_id);
             
             // Calculate remaining debt
             $remainingDebt = $debt->total_amount - $debt->paid_amount;
@@ -99,6 +101,8 @@ class PaymentController extends Controller
      */
     public function show(string $payment_id)
     {
+        $this->authorize('view', Payment::findOrFail($payment_id));
+
         try{
             $payment = Payment::with(['debt','debt.registration.student.user','debt.registration.class.term'])->findOrFail($payment_id);
             return response()->json([

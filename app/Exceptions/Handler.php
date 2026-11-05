@@ -7,6 +7,11 @@ use Throwable;
 
 class Handler extends ExceptionHandler
 {
+    protected function shouldReturnJson($request, Throwable $e)
+    {
+        return $request->is('api/*') || parent::shouldReturnJson($request, $e);
+    }
+
     /**
      * The list of the inputs that are never flashed to the session on validation exceptions.
      *

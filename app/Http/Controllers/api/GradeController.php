@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\GradeRequest;
 use App\Http\Controllers\Controller;
-use App\customs\services\GradeService;
+use Illuminate\Validation\Rule;
 
 class GradeController extends Controller
 {
@@ -17,6 +17,7 @@ class GradeController extends Controller
      */
     public function index(string $class_id)
     {
+        $this->authorize('viewGrades', ClassModel::findOrFail($class_id));
         $grades = Grade::with('student.user')->where('class_id', $class_id)->get();
         return response()->json([
             'status' => true,
@@ -63,9 +64,15 @@ class GradeController extends Controller
 
         public function batchStoreOrUpdate(Request $request, $class_id)
 {
+    $this->authorize('recordGrades', ClassModel::findOrFail($class_id));
+
     $request->validate([
         'grades' => 'required|array|min:1',
-        'grades.*.student_id' => 'required|exists:students,id',
+        'grades.*.student_id' => [
+            'required',
+            Rule::exists('students', 'id')->whereNull('deleted_at'),
+            Rule::exists('registrations', 'student_id')->where('class_id', $class_id),
+        ],
         'grades.*.grade' => 'required|numeric|min:0|max:20'
     ]);
 
@@ -106,6 +113,7 @@ class GradeController extends Controller
      */
     public function showForStudent(string $class_id)
     {
+        $this->authorize('viewAsStudent', ClassModel::findOrFail($class_id));
         
         try{
             $student_id = auth()->user()->student->id;

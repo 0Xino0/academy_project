@@ -16,6 +16,9 @@ class RegistrationController extends Controller
      */
     public function index(string $term_id,string $class_id)
     {
+        $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
+        $this->authorize('viewStudents', $class);
+
         $registrations = Registration::with([
             'student:id,user_id',
             'student.user:id,first_name,last_name,national_id',
@@ -155,6 +158,11 @@ class RegistrationController extends Controller
      */
     public function show(string $term_id,string $class_id,string $registration_id)
     {
+        $registration = Registration::where('class_id', $class_id)
+            ->whereHas('class', fn ($query) => $query->where('term_id', $term_id))
+            ->findOrFail($registration_id);
+        $this->authorize('view', $registration);
+
         try{
             $registration = Registration::with([
                 'student:id,user_id',
@@ -208,33 +216,17 @@ class RegistrationController extends Controller
      */
     public function destroy(string $term_id,string $class_id,string $registration_id)
     {
-        try{
-            $registration = Registration::findOrFail($registration_id);
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'error while finding registration information',
-                'error' => $e->getMessage()
-            ]);
-        }
+        $registration = Registration::where('class_id', $class_id)
+            ->whereHas('class', fn ($query) => $query->where('term_id', $term_id))
+            ->findOrFail($registration_id);
+        $this->authorize('delete', $registration);
 
         $result = $registration->delete();
 
-        if($result)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'registration deleted successfully',
-                'error' => null
-            ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'error while deleting registration',
-                'error' => null
-            ]);
-        }
-        
+        return response()->json([
+            'status' => (bool) $result,
+            'message' => $result ? 'registration deleted successfully' : 'error while deleting registration',
+            'error' => null,
+        ]);
     }
 }

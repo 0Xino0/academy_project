@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api;
 
 use App\Models\User;
 use App\Models\Student;
+use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StudentRequest;
@@ -36,6 +37,8 @@ class StudentController extends Controller
     
     public function indexPerClasses(Student $student,string $class_id)
     {
+        $this->authorize('viewStudents', ClassModel::findOrFail($class_id));
+
         $students = $student::with(['user'])
                             ->whereHas('registrations',function($query) use ($class_id){
                                 $query->where('class_id',$class_id);
@@ -71,6 +74,9 @@ class StudentController extends Controller
      */
     public function store(StudentRequest $request )
     {
+        $owner = User::findOrFail($request->user_id);
+        $this->authorize('create', [Student::class, $owner]);
+
         $request->validated();
         $student = Student::create([
             'user_id' => $request->user_id,
@@ -103,42 +109,30 @@ class StudentController extends Controller
 
     public function show(Student $student , string $id)
     {
-        try{
-            $student = $student->with('user')->findOrFail($id);
-            return response()->json([
-                'status' => true,
-                'message' => 'student retrieved successfully',
-                'data' => $student
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'student not found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        $student = Student::with('user')->findOrFail($id);
+        $this->authorize('view', $student);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'student retrieved successfully',
+            'data' => $student,
+        ]);
     }
 
     public function showPerClass(Student $student , string $class_id, string $student_id)
     {
-        try{
-            $student = $student->with(['user','class','registration'])
-                                ->whereHas('registration',function($query) use ($class_id){
-                                    $query->where('class_id',$class_id);
-                                })
-                                ->findOrFail($student_id);
-            return response()->json([
-                'status' => true,
-                'message' => 'student retrieved successfully',
-                'data' => $student
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'student not found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        $this->authorize('viewStudents', ClassModel::findOrFail($class_id));
+        $student = Student::with(['user', 'registrations' => function ($query) use ($class_id) {
+            $query->where('class_id', $class_id);
+        }])->whereHas('registrations', function ($query) use ($class_id) {
+            $query->where('class_id', $class_id);
+        })->findOrFail($student_id);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'student retrieved successfully',
+            'data' => $student,
+        ]);
     }
     /**
      * Show the form for editing the specified resource.
@@ -153,16 +147,8 @@ class StudentController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        try{
-            $student = Student::findOrFail($id);
-            
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'studnet not found',
-                'error' => $e->getMessage()
-            ]);
-        }
+        $student = Student::findOrFail($id);
+        $this->authorize('update', $student);
 
         $student->update($request->validate([
             'father_name' => 'required|string',

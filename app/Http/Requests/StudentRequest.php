@@ -26,7 +26,7 @@ class StudentRequest extends FormRequest
             'father_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
             'mother_name' => 'required|string',
             'mother_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
-            'user_id' => 'required|unique:students,user_id'
+            'user_id' => 'required|exists:users,id|unique:students,user_id'
         ];
     }
 }
