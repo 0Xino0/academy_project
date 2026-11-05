@@ -86,7 +86,7 @@ class CourseApiContractTest extends AcademicTestCase
             ->assertJsonPath('data.0.term_id', $class->term_id)
             ->assertJsonPath('data.0.tuition_fee', '123.45')
             ->assertJsonPath('data.0.registered_students_count', 1)
-            ->assertJsonCount(1, 'data.0.schedules')->assertJsonPath('data.0.schedules.0.day_of_week', 'Monday');
+            ->assertJsonCount(1, 'data.0.schedules')->assertJsonPath('data.0.schedules.0.day_of_week', 'monday');
         $this->assertSame('Academic Test', $response->json('data.0.teacher_name'));
     }
 
