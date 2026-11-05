@@ -1,163 +1,96 @@
 <?php
 
 namespace App\Http\Controllers\api;
-use App\Http\Controllers\Controller;
 
-use App\Models\Course;
-use App\Models\ClassModel;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseRequest;
+use App\Models\ClassModel;
+use App\Models\Course;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Throwable;
 
 class CourseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        try{
-            $courses = Course::get();
+        try {
             return response()->json([
                 'status' => true,
-                'message' => 'data retrivied successfully',
-                'data' => $courses
+                'message' => 'Courses retrieved successfully',
+                'data' => Course::all(),
             ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'an error while getting courses data',
-                'error' => $e->getMessage()
-            ]);
+        } catch (Throwable $e) {
+            return $this->failure($e);
         }
-        
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(CourseRequest $request)
     {
-        
-        $course = Course::create($request->validated());
+        try {
+            $course = Course::create($request->validated());
 
-        if($course)
-        {
             return response()->json([
                 'status' => true,
-                'message' => 'course created successfully',
-                'data' => $course
+                'message' => 'Course created successfully',
+                'data' => $course,
             ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'an error while creating courses',
-            ]);
+        } catch (Throwable $e) {
+            return $this->failure($e);
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        try{
+        try {
             $course = Course::findOrFail($id);
+
             return response()->json([
                 'status' => true,
-                'message' => 'data of course retrivied successfully',
-                'data' => $course
+                'message' => 'Course retrieved successfully',
+                'data' => $course,
             ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'stauts' => false,
-                'message' => 'an error while getting courses',
-                'error' => $e->getMessage()
-            ]);
+        } catch (Throwable $e) {
+            return $this->failure($e);
         }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-       //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(CourseRequest $request, string $id)
     {
-        try{
+        try {
             $course = Course::findOrFail($id);
-        }catch(\Exception $e){
-            return response()->json([
-                'stauts' => false,
-                'message' => 'an error while getting courses',
-                'error' => $e->getMessage()
-            ]);
-        }
+            $course->update($request->validated());
 
-        $course->update($request->validated());
-
-        if($course)
-        {
             return response()->json([
                 'status' => true,
-                'message' => 'course updated successfully',
-                'data' => $course
+                'message' => 'Course updated successfully',
+                'data' => $course,
             ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'an error while updating course'
-            ]);
+        } catch (Throwable $e) {
+            return $this->failure($e);
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        try{
+        try {
             $course = Course::findOrFail($id);
-        }catch(\Exception $e){
-            return response()->json([
-                'stauts' => false,
-                'message' => 'an error while getting courses',
-                'error' => $e->getMessage()
-            ]);
-        }
+            if (! $course->delete()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Course could not be deleted',
+                ], 500);
+            }
 
-        $result = $course->delete();
-        if($result)
-        {
             return response()->json([
-                'stauts' => true,
-                'message' => 'the course deleted successfully'
+                'status' => true,
+                'message' => 'Course deleted successfully',
             ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'an error while deleting course'
-            ]);
+        } catch (Throwable $e) {
+            return $this->failure($e);
         }
     }
 
-    /**
-     * Retrieve all active courses whose registration deadline has not passed.
-     */
-    public function getActiveCourses(Request $request)
+    public function getActiveCourses()
     {
         try {
             $classes = ClassModel::with(['course', 'teacher.user', 'schedules'])
@@ -169,10 +102,14 @@ class CourseController extends Controller
                 ->get();
 
             $data = $classes->map(function ($class) {
+                $teacher = $class->teacher?->user;
+
                 return [
                     'id' => $class->id,
+                    'term_id' => $class->term_id,
+                    'tuition_fee' => $class->tuition_fee,
                     'course_name' => $class->course->title,
-                    'teacher_name' => $class->teacher->user->first_name . ' ' . $class->teacher->user->last_name,
+                    'teacher_name' => $teacher ? trim($teacher->first_name . ' ' . $teacher->last_name) : null,
                     'capacity' => $class->capacity,
                     'registered_students_count' => $class->registrations_count,
                     'schedules' => $class->schedules->map(function ($schedule) {
@@ -188,14 +125,27 @@ class CourseController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Active courses retrieved successfully',
-                'data' => $data
+                'data' => $data,
             ]);
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+            return $this->failure($e);
+        }
+    }
+
+    private function failure(Throwable $e)
+    {
+        if ($e instanceof ModelNotFoundException) {
             return response()->json([
                 'status' => false,
-                'message' => 'Error retrieving active courses',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Course not found',
+            ], 404);
         }
+
+        report($e);
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Unable to process the course request',
+        ], 500);
     }
 }

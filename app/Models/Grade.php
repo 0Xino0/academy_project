@@ -13,7 +13,6 @@ class Grade extends Model
         'student_id',
         'class_id',
         'grade',
-        'entered_at',
     ];
 
     public function student()

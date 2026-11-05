@@ -27,13 +27,15 @@ class Student extends Model
     public function registredClasses()
     {
         return $this->belongsToMany(ClassModel::class,'registrations','student_id','class_id')
-            ->withPivot('registration_date');
+            ->withPivot('id')
+            ->withTimestamps();
     }
 
     public function classesWithGrades()
     {
         return $this->belongsToMany(ClassModel::class,'grades','student_id','class_id')
-            ->withPivot('grade','entered_at');
+            ->withPivot('id', 'grade')
+            ->withTimestamps();
     }
 
     public function registrations()

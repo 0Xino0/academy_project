@@ -30,6 +30,10 @@ class ClassModel extends Model
 
     ];
 
+    protected $casts = [
+        'tuition_fee' => 'decimal:2',
+    ];
+
     public function course()
     {
         return $this->belongsTo(Course::class);
@@ -42,13 +46,15 @@ class ClassModel extends Model
     public function registeredStudents()
     {
         return $this->belongsToMany(Student::class, 'registrations', 'class_id', 'student_id')
-            ->withPivot('registration_date');
+            ->withPivot('id')
+            ->withTimestamps();
     }
 
     public function studentsWithGrades()
     {
         return $this->belongsToMany(Student::class, 'grades', 'class_id', 'student_id')
-            ->withPivot('grade','entered_at');
+            ->withPivot('id', 'grade')
+            ->withTimestamps();
     }
 
     public function registrations()
@@ -68,7 +74,7 @@ class ClassModel extends Model
 
     public function schedules()
     {
-        return $this->hasMany(Schedule::class);
+        return $this->hasMany(Schedule::class, 'class_id');
     }
 }
 
