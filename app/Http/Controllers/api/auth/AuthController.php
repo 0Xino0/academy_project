@@ -9,8 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Services\AccountService;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\RegistrationRequest;
-use Tymon\JWTAuth\Exceptions\TokenExpiredException;
-use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
+use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
 {
@@ -86,33 +85,21 @@ class AuthController extends Controller
     public function refresh(Request $request)
     {
         try {
-            // extract expired token
-            $token = JWTAuth::getToken();
-        
-            // refresh the token
-            $newToken = JWTAuth::refresh($token);
-        
-            // set new token to extract the user
+            // Parse this request explicitly; do not reuse a token cached by the JWT service.
+            $newToken = JWTAuth::parseToken()->refresh();
             $user = JWTAuth::setToken($newToken)->toUser();
-        
-            return $this->responseWithToken($newToken,$user);
-        } catch (TokenExpiredException $e) {
+
+            if (! $user) {
+                JWTAuth::invalidate();
+                throw new JWTException('The account no longer exists.');
+            }
+
+            return $this->responseWithToken($newToken, $user);
+        } catch (JWTException $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Token expired',
+                'message' => 'Session expired or invalid. Please sign in again.',
             ], 401);
-        } catch (TokenBlacklistedException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'The token has been blacklisted',
-            ], 401);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Could not refresh token',
-                'error' => $e->getMessage(),
-            ], 500);
         }
     }
-
 }
