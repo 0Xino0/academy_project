@@ -29,4 +29,11 @@ class StudentRequest extends FormRequest
             'user_id' => 'required|exists:users,id|unique:students,user_id'
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'user_id.unique' => 'A student profile already exists. Update that profile instead.',
+        ];
+    }
 }

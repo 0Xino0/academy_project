@@ -22,10 +22,10 @@ class RegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'national_id' => 'required|integer|digits:10|unique:users',
+            'national_id' => 'required|digits:10|unique:users,national_id',
             'first_name' =>'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
+            'phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/','unique:users,phone'],
             'email' =>'required|email|unique:users|email:filter',
             'password' => 'required|string|min:8|confirmed',
         ];

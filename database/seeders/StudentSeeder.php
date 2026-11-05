@@ -14,7 +14,7 @@ class StudentSeeder extends Seeder
      */
     public function run(): void
     {
-        $studentsInComplete = User::role('student')->whereDoesntHave('student')->get();
+        $studentsInComplete = User::role('student')->whereDoesntHave('student', fn ($query) => $query->withTrashed())->get();
 
         foreach($studentsInComplete as $user)
         {

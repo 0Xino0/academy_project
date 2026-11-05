@@ -14,7 +14,7 @@ class TeacherSeeder extends Seeder
      */
     public function run(): void
     {
-        $teacheInComplete = User::role('teacher')->whereDoesntHave('teacher')->get();
+        $teacheInComplete = User::role('teacher')->whereDoesntHave('teacher', fn ($query) => $query->withTrashed())->get();
 
         foreach($teacheInComplete as $user)
         {

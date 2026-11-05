@@ -7,10 +7,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegistrationRequest;
-use App\Models\Teacher;
+use App\Services\AccountService;
 
 class UserController extends Controller
 {
+    public function __construct(private AccountService $accounts) {}
+
     public function Index(User $user)
     {
         $users = User::with('roles')->get();
@@ -25,28 +27,15 @@ class UserController extends Controller
 
     public function store(RegistrationRequest $request)
     {
-        $user = User::create($request->validated());
+        $user = $this->accounts->create($request->validated(), 'teacher');
 
-        $user->assignRole('teacher');
-
-        if($user)
-        {
-            Teacher::create(['user_id' => $user->id]);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'User created successfully',
-                'data' => $user,
-                'role' => $user->getRoleNames(),
-                'teacher' => $user->teacher,
-            ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while creating the user'
-
-            ]);
-        }
+        return response()->json([
+            'status' => true,
+            'message' => 'User created successfully',
+            'data' => $user,
+            'role' => $user->getRoleNames(),
+            'teacher' => $user->teacher,
+        ]);
     }
 
     public function edit(string $id)
@@ -71,10 +60,10 @@ class UserController extends Controller
         $this->authorize('update', $user);
 
         $user->update($request->validate([
-            'national_id' => 'required|integer|digits:10|unique:users,national_id,'.$user->id,
+            'national_id' => 'required|digits:10|unique:users,national_id,'.$user->id,
             'first_name' =>'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'phone' => ['required','regex:/^(\+98)[0-9]{10}$/'], 
+            'phone' => ['required', 'regex:/^(\+98)(9)[0-9]{9}$/', 'unique:users,phone,'.$user->id],
             'email' =>'required|email|email:filter|unique:users,email,'.$user->id,
         ]));
 
@@ -96,7 +85,7 @@ class UserController extends Controller
             ], 500);
         }
 
-        $result = $user->delete();
+        $result = $this->accounts->deleteUser($user);
 
         if($result)
         {

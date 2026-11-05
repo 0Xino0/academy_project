@@ -8,9 +8,12 @@ use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StudentRequest;
+use App\Services\AccountService;
 
 class StudentController extends Controller
 {
+    public function __construct(private AccountService $accounts) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -76,31 +79,13 @@ class StudentController extends Controller
     {
         $owner = User::findOrFail($request->user_id);
         $this->authorize('create', [Student::class, $owner]);
+        $student = $this->accounts->createStudentProfile($owner, $request->validated());
 
-        $request->validated();
-        $student = Student::create([
-            'user_id' => $request->user_id,
-            'father_name' => $request->father_name,
-            'father_phone' => $request->father_phone,
-            'mother_name' => $request->mother_name,
-            'mother_phone' => $request->mother_phone
+        return response()->json([
+            'status' => true,
+            'message' => 'student created successfully',
+            'data' => $student,
         ]);
-
-        if($student)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'student created successfully',
-                'data' => $student
-            ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while creating the student.',
-            ]);
-        }
-            
-    
     }
 
     /**
@@ -179,7 +164,6 @@ class StudentController extends Controller
     {
         try{
             $student = Student::findOrFail($id);
-            $user = User::findOrFail($student->user_id);
         }catch(\Exception $e){
             return response()->json([
                 'status' => false,
@@ -188,9 +172,7 @@ class StudentController extends Controller
             ]);
         }
 
-        $user->removeRole('student');
-
-        $result = $student->delete();
+        $result = $this->accounts->deleteStudentProfile($student);
 
         if($result)
         {

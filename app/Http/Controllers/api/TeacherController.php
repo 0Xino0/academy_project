@@ -7,10 +7,12 @@ use App\Models\Teacher;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TeacherRequest;
-use Dotenv\Util\Str;
+use App\Services\AccountService;
 
 class TeacherController extends Controller
 {
+    public function __construct(private AccountService $accounts) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -141,7 +143,6 @@ class TeacherController extends Controller
     {
         try{
             $teacher = Teacher::findOrFail($id);
-            $user = User::findOrFail($teacher->user_id);
         }catch(\Exception $e){
             return response()->json([
                 'status' => false,
@@ -150,9 +151,7 @@ class TeacherController extends Controller
             ]);
         }
 
-        $user->removeRole('teacher');
-
-        $result = $teacher->delete();
+        $result = $this->accounts->deleteTeacherProfile($teacher);
 
         if($result)
         {

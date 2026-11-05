@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\api\auth;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Http\Requests\loginRequest;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Hash;
+use App\Services\AccountService;
+use Illuminate\Support\Facades\DB;
 use App\Http\Requests\RegistrationRequest;
-use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 
 class AuthController extends Controller
 {
+    public function __construct(private AccountService $accounts) {}
+
     /**
      * login method
      */
@@ -39,61 +40,25 @@ class AuthController extends Controller
       * register method
       */
 
-      public function register(RegistrationRequest $request)
-      {
+    public function register(RegistrationRequest $request)
+    {
+        return $this->registerWithRole($request, 'student');
+    }
 
-        // $this->authorize('create' , User::class);
+    public function registerAdmin(RegistrationRequest $request)
+    {
+        return $this->registerWithRole($request, 'manager');
+    }
 
-        $request->validated();
-        
-        $user = User::create([
-            'national_id' => $request->national_id,
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'password' =>  Hash::make($request->password) 
-        ]);
-
-        $user->assignRole('student');
-        if($user)
-        {
+    private function registerWithRole(RegistrationRequest $request, string $role)
+    {
+        return DB::transaction(function () use ($request, $role) {
+            $user = $this->accounts->create($request->validated(), $role);
             $token = auth()->login($user);
-            return $this->responseWithToken($token,$user);
-        }else{
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'An error occurred while registering'
-            ],500);
-        }
-      }
 
-      public function registerAdmin(RegistrationRequest $request)
-      {
-        $request->validated();
-        
-        $user = User::create([
-            'national_id' => $request->national_id,
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'password' =>  Hash::make($request->password) 
-        ]);
-
-        $user->assignRole('manager');
-
-        if($user)
-        {
-            $token = auth()->login($user);
-            return $this->responseWithToken($token,$user);
-        }else{
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'An error occurred while registering'
-            ],500);
-        }
-      }
+            return $this->responseWithToken($token, $user);
+        });
+    }
 
       public function responseWithToken($token,$user)
       {
@@ -102,7 +67,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => config('jwt.ttl') * 60,
-            'user' => $user->with('roles')->where('id',$user->id)->first(),
+            'user' => $user->load(['roles', 'student', 'teacher']),
 
         ], 200);
       }
