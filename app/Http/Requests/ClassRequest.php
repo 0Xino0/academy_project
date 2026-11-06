@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ClassRequest extends FormRequest
 {
@@ -23,12 +24,13 @@ class ClassRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'course_id' => 'required|exists:courses,id',
-            'teacher_id' => 'required|exists:teachers,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'startRegistration_Date' => 'required|date|before:start_date',
-            'endRegistration_Date' => 'required|date|after:startRegistration_Date|before:start_date',
+            'course_id' => 'required|integer|exists:courses,id',
+            'teacher_id' => ['required', 'integer', Rule::exists('teachers', 'id')->whereNull('deleted_at')],
+            'term_id' => ['sometimes', 'integer', Rule::in([$this->route('term_id')])],
+            'start_date' => 'required|date_format:Y-m-d',
+            'end_date' => 'required|date_format:Y-m-d|after:start_date',
+            'startRegistration_Date' => 'required|date_format:Y-m-d|before:start_date',
+            'endRegistration_Date' => 'required|date_format:Y-m-d|after:startRegistration_Date|before:start_date',
             'capacity' => 'required|integer|min:1',
             'tuition_fee' => 'required|numeric|min:0',
         ];

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class TermRequest extends FormRequest
 {
@@ -23,9 +24,11 @@ class TermRequest extends FormRequest
     {
         return [
             'year' => 'required|integer|min:1400',
-            'season' => 'required|string|in:spring,summer,fall,winter',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'season' => ['required', 'string', Rule::in(['spring', 'summer', 'fall', 'winter']),
+                Rule::unique('terms', 'season')->where('year', is_scalar($this->input('year')) ? $this->input('year') : null)
+                    ->ignore($this->route('id'))],
+            'start_date' => 'required|date_format:Y-m-d',
+            'end_date' => 'required|date_format:Y-m-d|after:start_date',
             'is_active' => 'required|boolean',
         ];
     }

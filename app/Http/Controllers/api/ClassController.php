@@ -1,337 +1,137 @@
 <?php
 
 namespace App\Http\Controllers\api;
-use App\Models\Term;
 
-use App\Models\User;
-use App\Models\Course;
-use App\Models\Teacher;
-use App\Models\ClassModel;
-use Illuminate\Http\Request;
-use App\Http\Requests\ClassRequest;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ClassRequest;
+use App\Models\ClassModel;
+use App\Models\Term;
+use App\Services\ClassService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Throwable;
 
 class ClassController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(private ClassService $classes) {}
+
     public function index(string $term_id)
     {
-        try{
-            $classes = ClassModel::with(['course', 'teacher.user','term'])->where('term_id',$term_id)->get();
+        return $this->respond(function () use ($term_id) {
+            Term::findOrFail($term_id);
+            $classes = ClassModel::with(['course', 'teacher.user', 'term'])->withCount('registrations')
+                ->where('term_id', $term_id)->get();
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Data fetched successfully',
-                'classes' => $classes,
-            ]);
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching data',
-                'error' => $e->getMessage(),
-            ], 500);
-        } 
+            return $this->listing($classes);
+        });
     }
 
     public function indexForStudent(string $term_id)
     {
-        $student_id = auth()->user()->student->id;
-        $classes = ClassModel::with(['course', 'teacher.user', 'term', 'registrations' => function($query) use ($student_id) {
-            $query->where('student_id', $student_id);
-        }])
-        ->where('term_id',$term_id)
-        ->whereHas('registrations', function($query) use ($student_id) {
-            $query->where('student_id', $student_id);
-        })
-        ->get();
+        return $this->respond(function () use ($term_id) {
+            Term::findOrFail($term_id);
+            $studentId = auth()->user()->student->id;
+            $classes = ClassModel::with(['course', 'teacher.user', 'term',
+                'registrations' => fn ($query) => $query->where('student_id', $studentId)])
+                ->withCount('registrations')->where('term_id', $term_id)
+                ->whereHas('registrations', fn ($query) => $query->where('student_id', $studentId))->get();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Data fetched successfully',
-            'classes' => $classes,
-        ]);
+            return $this->listing($classes);
+        });
     }
 
     public function indexForTeacher(string $term_id)
     {
-        $teacher_id = auth()->user()->teacher->id;
+        return $this->respond(function () use ($term_id) {
+            Term::findOrFail($term_id);
+            $classes = ClassModel::with(['course', 'teacher.user', 'term'])->withCount('registrations')
+                ->where('term_id', $term_id)->where('teacher_id', auth()->user()->teacher->id)->get();
 
-        $classes = ClassModel::with(['course', 'teacher.user','term'])
-        ->where('term_id',$term_id)
-        ->where('teacher_id',$teacher_id)
-        ->get();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Data fetched successfully',
-            'classes' => $classes,
-        ]);
-    }
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+            return $this->listing($classes);
+        });
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(ClassRequest $request,string $term_id)
+    public function store(ClassRequest $request, string $term_id)
     {
-        $data = array_merge($request->validated(),['term_id' => $term_id]);
+        return $this->respond(fn () => $this->single(
+            $this->classes->save($term_id, $request->validated()), 'Class created successfully'
+        ));
+    }
 
-        try{
-            // Get the term dates
-            $term = Term::findOrFail($term_id);
-            
-            // Check if class dates are within term dates
-            if ($data['start_date'] < $term->start_date || $data['end_date'] > $term->end_date) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Class dates must be within the term dates',
-                    'term_dates' => [
-                        'start_date' => $term->start_date,
-                        'end_date' => $term->end_date
-                    ]
-                ], 422);
+    public function show(string $term_id, string $class_id)
+    {
+        return $this->respond(function () use ($term_id, $class_id) {
+            $class = ClassModel::with(['course', 'teacher.user', 'term'])->withCount('registrations')
+                ->where('term_id', $term_id)->findOrFail($class_id);
+
+            return $this->single($class);
+        });
+    }
+
+    public function showForTeacher(string $term_id, string $class_id)
+    {
+        return $this->respond(function () use ($term_id, $class_id) {
+            $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
+            $this->authorize('viewAsTeacher', $class);
+
+            return $this->single($class->load(['course', 'teacher.user', 'term', 'registrations.student.user'])
+                ->loadCount('registrations'));
+        });
+    }
+
+    public function showForStudent(string $term_id, string $class_id)
+    {
+        return $this->respond(function () use ($term_id, $class_id) {
+            $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
+            $this->authorize('viewAsStudent', $class);
+            $studentId = auth()->user()->student->id;
+
+            return $this->single($class->load(['course', 'teacher.user', 'term',
+                'registrations' => fn ($query) => $query->where('student_id', $studentId)])->loadCount('registrations'));
+        });
+    }
+
+    public function update(ClassRequest $request, string $term_id, string $class_id)
+    {
+        return $this->respond(fn () => $this->single(
+            $this->classes->save($term_id, $request->validated(), $class_id), 'Class updated successfully'
+        ));
+    }
+
+    public function destroy(string $term_id, string $class_id)
+    {
+        return $this->respond(function () use ($term_id, $class_id) {
+            $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
+            if (! $class->delete()) {
+                throw new RuntimeException('The class could not be deleted.');
             }
 
-            // Validate registration dates
-            if ($data['startRegistration_Date'] >= $data['start_date']) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Registration start date must be before class start date'
-                ], 422);
-            }
+            return response()->json(['status' => true, 'message' => 'Class deleted successfully', 'error' => null]);
+        });
+    }
 
-            if ($data['endRegistration_Date'] <= $data['startRegistration_Date']) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Registration end date must be after registration start date'
-                ], 422);
-            }
+    private function listing($classes)
+    {
+        return response()->json(['status' => true, 'message' => 'Data fetched successfully', 'classes' => $classes]);
+    }
 
-            if ($data['endRegistration_Date'] >= $data['start_date']) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Registration end date must be before class start date'
-                ], 422);
-            }
+    private function single(ClassModel $class, string $message = 'Data fetched successfully')
+    {
+        return response()->json(['status' => true, 'message' => $message, 'class' => $class]);
+    }
 
-            // check class status is active or not
-            if($term->is_active == 0){
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Term is not active',
-                ], 422);
-            }
+    private function respond(callable $action)
+    {
+        try {
+            return $action();
+        } catch (ModelNotFoundException | ValidationException | AuthorizationException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            report($e);
 
-            $class = ClassModel::create($data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Class created successfully',
-                'class' => $class->with('course','teacher.user','term')->where('id',$class->id)->first(),
-            ]);
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error creating class',
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => false, 'message' => 'Unable to process the class request'], 500);
         }
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $term_id,string $class_id)
-    {
-        try{
-            $class = ClassModel::with(['course', 'teacher.user','term'])->where('id',$class_id)->where('term_id',$term_id)->first();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data fetched successfully',
-                'class' => $class
-            ]);
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching data',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function showForTeacher(string $term_id,string $class_id)
-    {
-        $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
-        $this->authorize('viewAsTeacher', $class);
-
-        $teacher_id = auth()->user()->teacher->id;
-
-        try{
-            $class = ClassModel::with(['course', 'teacher.user','term','registrations.student.user'])
-                            ->where('id',$class_id)
-                            ->where('term_id',$term_id)
-                            ->where('teacher_id',$teacher_id)
-                            ->first();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data fetched successfully',
-                'class' => $class,
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching data',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-        
-    }
-
-    public function showForStudent(string $term_id,string $class_id)
-    {
-        $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
-        $this->authorize('viewAsStudent', $class);
-
-        $student_id = auth()->user()->student->id;
-
-        try{    
-            $class = ClassModel::with(['course', 'teacher.user', 'term', 'registrations' => function($query) use ($student_id) {
-                $query->where('student_id', $student_id);
-            }])
-            ->where('id',$class_id)
-            ->where('term_id',$term_id)
-            ->whereHas('registrations', function($query) use ($student_id) {
-                $query->where('student_id', $student_id);
-            })
-            ->first();
-            return response()->json([
-                'status' => true,
-                'message' => 'Data fetched successfully',
-                'class' => $class,
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error fetching data',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(ClassRequest $request, string $term_id,string $class_id)
-    {
-        try{
-            $class = ClassModel::with(['course', 'teacher.user','term'])->where('id',$class_id)->where('term_id',$term_id)->first();
-            $term = Term::findOrFail($term_id);
-            
-            $data = $request->validated();
-
-            // check class status is active or not
-            if($term->is_active == 0){
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Term is not active',
-                ], 422);
-            }
-
-            // Check if class dates are within term dates
-            if ($data['start_date'] < $term->start_date || $data['end_date'] > $term->end_date) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Class dates must be within the term dates',
-                    'term_dates' => [
-                        'start_date' => $term->start_date,
-                        'end_date' => $term->end_date
-                    ]
-                ], 422);
-            }
-
-            // Validate registration dates
-            if ($data['startRegistration_Date'] >= $data['start_date']) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Registration start date must be before class start date'
-                ], 422);
-            }
-
-            if ($data['endRegistration_Date'] <= $data['startRegistration_Date']) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Registration end date must be after registration start date'
-                ], 422);
-            }
-
-            if ($data['endRegistration_Date'] >= $data['start_date']) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Registration end date must be before class start date'
-                ], 422);
-            }
-
-            $class->update($data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Class updated successfully',
-                'class' => $class,
-            ]);
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error updating class',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $term_id,string $class_id)
-    {
-        try{
-            $class = ClassModel::with(['course', 'teacher.user','term'])->where('id',$class_id)->where('term_id',$term_id)->first();
-            $result =  $class->delete();
-
-            if($result){
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Class deleted successfully',
-                    'error' => null,
-                ]);
-            }
-
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Error deleting class',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    
     }
 }

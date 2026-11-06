@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\Term;
 use App\Models\User;
 use App\Services\AccountService;
 use Database\Seeders\RolePermissionSeeder;
@@ -57,9 +58,11 @@ class AccountIntegrityTest extends TestCase
             ->assertJsonPath('user.student.father_name', null)
             ->assertJsonPath('user.teacher', null)->assertJsonMissingPath('user.password');
         $this->assertDatabaseCount('students', 1);
+        $term = Term::create(['year' => 1405, 'season' => 'fall', 'is_active' => true,
+            'start_date' => now()->toDateString(), 'end_date' => now()->addMonths(3)->toDateString()]);
         $this->app['auth']->forgetGuards();
         $this->withToken($response->json('access_token'))
-            ->getJson('/api/v1/me/studying-terms/1/classes')->assertOk()->assertJsonCount(0, 'classes');
+            ->getJson('/api/v1/me/studying-terms/'.$term->id.'/classes')->assertOk()->assertJsonCount(0, 'classes');
     }
 
     public function test_teacher_creation_preserves_the_existing_response_and_creates_exactly_one_profile(): void
