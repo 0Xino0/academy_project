@@ -223,6 +223,7 @@ class ApiAuthorizationTest extends TestCase
     public function test_registration_delete_requires_owner_and_matching_url_parents(): void
     {
         [$teacher, $student, $class, $registration] = $this->classroom();
+        Debt::create(['registration_id' => $registration->id, 'amount' => 0, 'remaining' => 0]);
         $otherStudent = $this->makeStudent();
         $path = $this->registrationPath($class, $registration);
         $this->asUser($otherStudent->user);
@@ -237,12 +238,13 @@ class ApiAuthorizationTest extends TestCase
         $this->deleteJson(str_replace('/classes/'.$class->id.'/', '/classes/999/', $path))->assertNotFound();
         $this->assertDatabaseHas('registrations', ['id' => $registration->id]);
         $this->deleteJson($path)->assertOk();
-        $this->assertDatabaseMissing('registrations', ['id' => $registration->id]);
+        $this->assertSoftDeleted('registrations', ['id' => $registration->id], null, 'cancelled_at');
     }
 
     public function test_manager_cannot_delete_a_registration_through_wrong_parents(): void
     {
         [, , $class, $registration] = $this->classroom();
+        Debt::create(['registration_id' => $registration->id, 'amount' => 0, 'remaining' => 0]);
         $this->asUser($this->makeUser('manager'));
         $this->deleteJson(str_replace('/terms/'.$class->term_id.'/', '/terms/999/', $this->registrationPath($class, $registration)))
             ->assertNotFound();

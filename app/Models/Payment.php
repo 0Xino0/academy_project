@@ -12,7 +12,10 @@ class Payment extends Model
     protected $fillable = [
         'debt_id',
         'amount',
+        'paid_at',
     ];
+
+    protected $casts = ['amount' => 'decimal:2'];
 
     public function debt()
     {

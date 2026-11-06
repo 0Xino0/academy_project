@@ -28,6 +28,9 @@ use App\Http\Controllers\api\role_permission\PermissionController;
 
 Route::middleware('auth:api')->group(function(){
 
+Route::get('v1/registration-policy', [\App\Http\Controllers\api\RegistrationSettingController::class, 'show']);
+Route::put('v1/registration-policy', [\App\Http\Controllers\api\RegistrationSettingController::class, 'update'])->middleware('role:manager');
+
 Route::get('v1/permissions', [PermissionController::class, 'index'])->middleware(['role:manager']);
 Route::post('v1/permissions', [PermissionController::class, 'store'])->middleware(['role:manager']);
 Route::get('v1/permissions/{id}', [PermissionController::class, 'show'])->middleware(['role:manager']);

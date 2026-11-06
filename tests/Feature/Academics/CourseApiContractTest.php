@@ -97,13 +97,13 @@ class CourseApiContractTest extends AcademicTestCase
         $this->actingAs($this->account('student'), 'api');
 
         $this->getJson('/api/v1/courses/active')->assertOk()->assertJsonPath('status', true)
-            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.teacher_name', null)
-            ->assertJsonPath('data.0.schedules', []);
+            ->assertJsonPath('data', []);
     }
 
     public function test_active_classes_exclude_inactive_terms_and_accept_the_last_registration_day(): void
     {
         $class = $this->classroom(['endRegistration_Date' => now()->toDateString()]);
+        Schedule::create(['class_id' => $class->id, 'day_of_week' => 'monday', 'start_time' => '09:00:00', 'end_time' => '10:00:00']);
         $this->actingAs($this->account('student'), 'api');
         $this->getJson('/api/v1/courses/active')->assertOk()->assertJsonCount(1, 'data');
         $class->term->update(['is_active' => false]);

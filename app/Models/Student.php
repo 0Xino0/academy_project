@@ -27,6 +27,7 @@ class Student extends Model
     public function registredClasses()
     {
         return $this->belongsToMany(ClassModel::class,'registrations','student_id','class_id')
+            ->wherePivotNull('cancelled_at')
             ->withPivot('id')
             ->withTimestamps();
     }

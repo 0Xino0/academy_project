@@ -74,12 +74,14 @@ class AccountService
         return DB::transaction(function () use ($user) {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
 
+            app(AcademicDeletionService::class)->protectUser($user);
+
             if (! $user->delete()) {
                 throw new RuntimeException('The user could not be deleted.');
             }
 
             return true;
-        });
+        }, 3);
     }
 
     private function deleteProfile(Model $profile, string $role): bool

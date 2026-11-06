@@ -2,108 +2,34 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Models\Debt;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesEnrollmentResponses;
+use App\Models\Debt;
+use App\Support\Money;
 
 class DebtController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    use HandlesEnrollmentResponses;
+
     public function index()
     {
-        try{
-            $debts = Debt::with('registration.student.user')
-                            ->get();
-            return response()->json([
-                'status' => true,
-                'message' => 'debts retrieved successfully',
-                'data' => $debts
+        return $this->enrollmentResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Debts retrieved successfully',
+            'data' => Debt::with('registration.student.user', 'registration.class')->get(),
+        ]));
+    }
+
+    public function show()
+    {
+        return $this->enrollmentResponse(function () {
+            $studentId = auth()->user()->student->id;
+            $debts = Debt::with('registration.student.user', 'registration.class')
+                ->whereHas('registration', fn ($query) => $query->where('student_id', $studentId))->get();
+            return response()->json(['status' => true, 'message' => 'Debts retrieved successfully', 'data' => $debts,
+                'remaining_debt' => Money::decimal($debts->sum(fn ($debt) => Money::cents($debt->remaining))),
+                'paid_debt' => Money::decimal($debts->sum(fn ($debt) => Money::cents($debt->paid_amount))),
+                'waived_debt' => Money::decimal($debts->sum(fn ($debt) => Money::cents($debt->waived_amount))),
             ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'debts not found',
-                'error' => $e->getMessage()
-            ],500);
-        }
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Debt $debt)
-    {
-        
-        try{
-            $student_id = auth()->user()->student->id;
-            
-            $debt = $debt->with('registration.student.user','registration.class')
-                            ->whereHas('registration.student',function($query) use ($student_id){
-                                $query->where('id',$student_id);
-                            })
-                            ->get();
-
-            if($debt->isEmpty()){
-                return response()->json([
-                    'status' => false,
-                    'message' => 'debt not found',
-                    'error' => null
-                ],404);
-            }
-            return response()->json([
-                'status' => true,
-                'message' => 'debt retrieved successfully',
-                'data' => $debt,                
-                'remaining_debt' => $debt->sum('total_amount') - $debt->sum('paid_amount'),
-                'paid_debt' => $debt->sum('paid_amount')
-            ]);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'debt not found',
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Debt $debt)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Debt $debt)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Debt $debt)
-    {
-        //
+        });
     }
 }

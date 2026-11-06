@@ -71,7 +71,7 @@ class GradeController extends Controller
         'grades.*.student_id' => [
             'required',
             Rule::exists('students', 'id')->whereNull('deleted_at'),
-            Rule::exists('registrations', 'student_id')->where('class_id', $class_id),
+            Rule::exists('registrations', 'student_id')->where('class_id', $class_id)->whereNull('cancelled_at'),
         ],
         'grades.*.grade' => 'required|numeric|min:0|max:20'
     ]);

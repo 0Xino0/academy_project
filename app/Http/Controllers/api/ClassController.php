@@ -10,7 +10,6 @@ use App\Services\ClassService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 use Throwable;
 
 class ClassController extends Controller
@@ -103,10 +102,7 @@ class ClassController extends Controller
     public function destroy(string $term_id, string $class_id)
     {
         return $this->respond(function () use ($term_id, $class_id) {
-            $class = ClassModel::where('term_id', $term_id)->findOrFail($class_id);
-            if (! $class->delete()) {
-                throw new RuntimeException('The class could not be deleted.');
-            }
+            app(\App\Services\AcademicDeletionService::class)->deleteClass($term_id, $class_id);
 
             return response()->json(['status' => true, 'message' => 'Class deleted successfully', 'error' => null]);
         });

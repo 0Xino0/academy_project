@@ -27,7 +27,7 @@ class GradeRequest extends FormRequest
             'student_id' => [
                 'required',
                 Rule::exists('students', 'id')->whereNull('deleted_at'),
-                Rule::exists('registrations', 'student_id')->where('class_id', $this->route('class_id')),
+                Rule::exists('registrations', 'student_id')->where('class_id', $this->route('class_id'))->whereNull('cancelled_at'),
             ],
             'grade' => 'required|numeric|min:0|max:20'
         ];

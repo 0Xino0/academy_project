@@ -8,7 +8,6 @@ use App\Models\Term;
 use App\Services\TermService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 use Throwable;
 
 class TermController extends Controller
@@ -46,10 +45,7 @@ class TermController extends Controller
     public function destroy(string $id)
     {
         return $this->respond(function () use ($id) {
-            $term = Term::findOrFail($id);
-            if (! $term->delete()) {
-                throw new RuntimeException('The term could not be deleted.');
-            }
+            app(\App\Services\AcademicDeletionService::class)->deleteTerm($id);
 
             return response()->json(['status' => true, 'message' => 'Term deleted successfully']);
         });

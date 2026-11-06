@@ -4,7 +4,6 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseRequest;
-use App\Models\ClassModel;
 use App\Models\Course;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
@@ -73,13 +72,7 @@ class CourseController extends Controller
     public function destroy(string $id)
     {
         try {
-            $course = Course::findOrFail($id);
-            if (! $course->delete()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Course could not be deleted',
-                ], 500);
-            }
+            app(\App\Services\AcademicDeletionService::class)->deleteCourse($id);
 
             return response()->json([
                 'status' => true,
@@ -90,43 +83,10 @@ class CourseController extends Controller
         }
     }
 
-    public function getActiveCourses()
+    public function getActiveCourses(\App\Services\RegistrationCatalogue $catalogue)
     {
         try {
-            $classes = ClassModel::with(['course', 'teacher.user', 'schedules'])
-                ->whereHas('term', function ($query) {
-                    $query->where('is_active', true);
-                })
-                ->where('endRegistration_Date', '>=', now()->toDateString())
-                ->withCount('registrations')
-                ->get();
-
-            $data = $classes->map(function ($class) {
-                $teacher = $class->teacher?->user;
-
-                return [
-                    'id' => $class->id,
-                    'term_id' => $class->term_id,
-                    'tuition_fee' => $class->tuition_fee,
-                    'course_name' => $class->course->title,
-                    'teacher_name' => $teacher ? trim($teacher->first_name . ' ' . $teacher->last_name) : null,
-                    'capacity' => $class->capacity,
-                    'registered_students_count' => $class->registrations_count,
-                    'schedules' => $class->schedules->map(function ($schedule) {
-                        return [
-                            'day_of_week' => $schedule->day_of_week,
-                            'start_time' => $schedule->start_time,
-                            'end_time' => $schedule->end_time,
-                        ];
-                    }),
-                ];
-            });
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Active courses retrieved successfully',
-                'data' => $data,
-            ]);
+            return response()->json($catalogue->response(auth()->user()));
         } catch (Throwable $e) {
             return $this->failure($e);
         }
@@ -134,6 +94,7 @@ class CourseController extends Controller
 
     private function failure(Throwable $e)
     {
+        if ($e instanceof \Illuminate\Validation\ValidationException) throw $e;
         if ($e instanceof ModelNotFoundException) {
             return response()->json([
                 'status' => false,

@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Registration extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    public const DELETED_AT = 'cancelled_at';
+    protected $hidden = ['active_slot'];
 
 
     protected $fillable = [
@@ -22,7 +26,7 @@ class Registration extends Model
 
     public function student()
     {
-        return $this->belongsTo(Student::class,'student_id');
+        return $this->belongsTo(Student::class,'student_id')->withTrashed();
     }
 
     public function debt()
