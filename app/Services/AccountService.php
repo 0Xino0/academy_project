@@ -24,13 +24,15 @@ class AccountService
             $user = User::create(Arr::only($attributes, [
                 'national_id', 'first_name', 'last_name', 'phone', 'email', 'password',
             ]));
+            if (! $user->exists) throw new RuntimeException('The account could not be saved.');
             $user->assignRole($role);
 
             if ($role === 'student') {
-                $user->student()->create([]);
+                $profile = $user->student()->create([]);
             } elseif ($role === 'teacher') {
-                $user->teacher()->create([]);
+                $profile = $user->teacher()->create([]);
             }
+            if (isset($profile) && ! $profile->exists) throw new RuntimeException('The profile could not be saved.');
 
             return $user->load(['roles', 'student', 'teacher']);
         });
@@ -53,10 +55,43 @@ class AccountService
                 ]);
             }
 
-            return $owner->student()->create(Arr::only($attributes, [
+            $profile = $owner->student()->create(Arr::only($attributes, [
                 'father_name', 'father_phone', 'mother_name', 'mother_phone',
             ]));
+            if (! $profile->exists) throw new RuntimeException('The profile could not be saved.');
+            return $profile->load('user');
         });
+    }
+
+    public function updateUser(User $user, array $attributes): User
+    {
+        return DB::transaction(function () use ($user, $attributes) {
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $user->fill(Arr::only($attributes, ['national_id', 'first_name', 'last_name', 'phone', 'email']));
+            if (! $user->save()) throw new RuntimeException('The account could not be updated.');
+            return $user->load('roles');
+        }, 3);
+    }
+
+    public function updateStudentProfile(Student $student, array $attributes): Student
+    {
+        return $this->updateProfile($student, Arr::only($attributes, ['father_name', 'father_phone', 'mother_name', 'mother_phone']));
+    }
+
+    public function updateTeacherProfile(Teacher $teacher, array $attributes): Teacher
+    {
+        return $this->updateProfile($teacher, Arr::only($attributes, ['salary', 'resume', 'bio', 'degree']));
+    }
+
+    private function updateProfile(Model $profile, array $attributes): Model
+    {
+        return DB::transaction(function () use ($profile, $attributes) {
+            User::whereKey($profile->user_id)->lockForUpdate()->firstOrFail();
+            $profile = $profile->newQuery()->whereKey($profile->id)->lockForUpdate()->firstOrFail();
+            $profile->fill($attributes);
+            if (! $profile->save()) throw new RuntimeException('The profile could not be updated.');
+            return $profile->load('user');
+        }, 3);
     }
 
     public function deleteStudentProfile(Student $student): bool
@@ -88,6 +123,7 @@ class AccountService
     {
         return DB::transaction(function () use ($profile, $role) {
             $owner = User::query()->lockForUpdate()->findOrFail($profile->user_id);
+            $profile = $profile->newQuery()->whereKey($profile->id)->lockForUpdate()->firstOrFail();
             $owner->removeRole($role);
 
             if (! $profile->delete()) {
@@ -95,6 +131,6 @@ class AccountService
             }
 
             return true;
-        });
+        }, 3);
     }
 }

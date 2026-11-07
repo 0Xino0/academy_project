@@ -2,191 +2,95 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Models\User;
-use App\Models\Student;
-use App\Models\ClassModel;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesPeopleResponses;
 use App\Http\Requests\StudentRequest;
+use App\Models\ClassModel;
+use App\Models\Student;
+use App\Models\User;
 use App\Services\AccountService;
+use Illuminate\Http\Request;
 
 class StudentController extends Controller
 {
+    use HandlesPeopleResponses;
+
     public function __construct(private AccountService $accounts) {}
 
-    /**
-     * Display a listing of the resource.
-     */
-
-    public function index(Student $student)
+    public function index()
     {
-        $students = $student::with('user')->get();
+        return $this->peopleResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Students retrieved successfully',
+            'data' => Student::with('user')->orderBy('id')->get(),
+        ]));
+    }
 
-        if($students->isEmpty())
-        {
+    public function indexPerClasses(string $class_id)
+    {
+        return $this->peopleResponse(function () use ($class_id) {
+            $this->authorize('viewStudents', ClassModel::findOrFail($class_id));
             return response()->json([
-                'status' => false,
-                'message' => 'no students found',
-                'data' => null
+                'status' => true, 'message' => 'Students retrieved successfully',
+                'data' => Student::with('user')->whereHas('registrations', fn ($query) => $query->where('class_id', $class_id))
+                    ->orderBy('id')->get(),
             ]);
-        }else{
+        });
+    }
+
+    public function store(StudentRequest $request)
+    {
+        return $this->peopleResponse(function () use ($request) {
+            $owner = User::findOrFail($request->user_id);
+            $this->authorize('create', [Student::class, $owner]);
             return response()->json([
-                'status' => true,
-                'message' => 'student retrieved successfully',
-                'data' => $students
+                'status' => true, 'message' => 'Student created successfully',
+                'data' => $this->accounts->createStudentProfile($owner, $request->validated()),
             ]);
-        }
+        });
     }
-    
-    public function indexPerClasses(Student $student,string $class_id)
+
+    public function show(string $id)
     {
-        $this->authorize('viewStudents', ClassModel::findOrFail($class_id));
-
-        $students = $student::with(['user'])
-                            ->whereHas('registrations',function($query) use ($class_id){
-                                $query->where('class_id',$class_id);
-                            })
-                            ->get();
-
-        if($students->isEmpty())
-        {
-            return response()->json([
-                'status' => false,
-                'message' => 'no students found',
-                'data' => null
-            ]);
-        }else{
-            return response()->json([
-                'status' => true,
-                'message' => 'student retrieved successfully',
-                'data' => $students
-            ]);
-        }
+        return $this->peopleResponse(function () use ($id) {
+            $student = Student::with('user')->findOrFail($id);
+            $this->authorize('view', $student);
+            return response()->json(['status' => true, 'message' => 'Student retrieved successfully', 'data' => $student]);
+        });
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(string $id)
+    public function showPerClass(string $class_id, string $student_id)
     {
-        //
+        return $this->peopleResponse(function () use ($class_id, $student_id) {
+            $this->authorize('viewStudents', ClassModel::findOrFail($class_id));
+            $membership = fn ($query) => $query->where('class_id', $class_id);
+            $student = Student::with(['user', 'registrations' => $membership])->whereHas('registrations', $membership)->findOrFail($student_id);
+            return response()->json(['status' => true, 'message' => 'Student retrieved successfully', 'data' => $student]);
+        });
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StudentRequest $request )
-    {
-        $owner = User::findOrFail($request->user_id);
-        $this->authorize('create', [Student::class, $owner]);
-        $student = $this->accounts->createStudentProfile($owner, $request->validated());
-
-        return response()->json([
-            'status' => true,
-            'message' => 'student created successfully',
-            'data' => $student,
-        ]);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-
-    public function show(Student $student , string $id)
-    {
-        $student = Student::with('user')->findOrFail($id);
-        $this->authorize('view', $student);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'student retrieved successfully',
-            'data' => $student,
-        ]);
-    }
-
-    public function showPerClass(Student $student , string $class_id, string $student_id)
-    {
-        $this->authorize('viewStudents', ClassModel::findOrFail($class_id));
-        $student = Student::with(['user', 'registrations' => function ($query) use ($class_id) {
-            $query->where('class_id', $class_id);
-        }])->whereHas('registrations', function ($query) use ($class_id) {
-            $query->where('class_id', $class_id);
-        })->findOrFail($student_id);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'student retrieved successfully',
-            'data' => $student,
-        ]);
-    }
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Student $student, string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        $student = Student::findOrFail($id);
-        $this->authorize('update', $student);
-
-        $student->update($request->validate([
-            'father_name' => 'required|string',
-            'father_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
-            'mother_name' => 'required|string',
-            'mother_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
-        ]));
-
-        if($student)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'student updated successfully',
-                'data' => $student
+        return $this->peopleResponse(function () use ($request, $id) {
+            $student = Student::findOrFail($id);
+            $this->authorize('update', $student);
+            $data = $request->validate([
+                'father_name' => 'required|string|max:255',
+                'father_phone' => ['required', 'regex:/^(\+98)(9)[0-9]{9}$/'],
+                'mother_name' => 'required|string|max:255',
+                'mother_phone' => ['required', 'regex:/^(\+98)(9)[0-9]{9}$/'],
             ]);
-        }else{
             return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while updating student'
+                'status' => true, 'message' => 'Student updated successfully',
+                'data' => $this->accounts->updateStudentProfile($student, $data),
             ]);
-        }
+        });
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        try{
-            $student = Student::findOrFail($id);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Student not found',
-                'error' => $e->getMessage()
-            ]);
-        }
-
-        $result = $this->accounts->deleteStudentProfile($student);
-
-        if($result)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'Student deleted successfully.',
-                'error' => null
-            ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while deleting the Student.',
-                'error' => null
-            ]);
-        }
+        return $this->peopleResponse(function () use ($id) {
+            $this->accounts->deleteStudentProfile(Student::findOrFail($id));
+            return response()->json(['status' => true, 'message' => 'Student profile deactivated; records retained.', 'error' => null]);
+        });
     }
 }

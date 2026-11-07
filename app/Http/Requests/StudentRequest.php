@@ -22,9 +22,9 @@ class StudentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'father_name' => 'required|string',
+            'father_name' => 'required|string|max:255',
             'father_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
-            'mother_name' => 'required|string',
+            'mother_name' => 'required|string|max:255',
             'mother_phone' => ['required','regex:/^(\+98)(9)[0-9]{9}$/'],
             'user_id' => 'required|exists:users,id|unique:students,user_id'
         ];

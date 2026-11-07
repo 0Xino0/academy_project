@@ -2,169 +2,70 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Models\User;
-use App\Models\Teacher;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\TeacherRequest;
+use App\Http\Controllers\Concerns\HandlesPeopleResponses;
+use App\Models\Teacher;
 use App\Services\AccountService;
+use Illuminate\Http\Request;
 
 class TeacherController extends Controller
 {
+    use HandlesPeopleResponses;
+
     public function __construct(private AccountService $accounts) {}
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Teacher $teacher)
+    public function index()
     {
-        $teachers = $teacher::with('user')->get();
-        
-        if($teachers->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'No teachers found',
-            ]);
-        }else{
-            return response()->json([
-                'status' => true,
-                'message' => 'Teachers retrieved successfully',
-                'data' => $teachers
-            ]);
-        }
-        
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(string $id,User $user)
-    {
-        //
-    }
-
-    // Updating data from the teacher that the admin must have access to
-    public function updateAdminInfo(Request $request,string $id)
-    {
-        try{
-            $teacher = Teacher::findOrFail($id);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Teacher not found',
-            ]);
-        }
-
-        $result = $teacher->update($request->validate([
-            'salary' => 'required|integer',
+        return $this->peopleResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Teachers retrieved successfully',
+            'data' => Teacher::with('user')->orderBy('id')->get(),
         ]));
+    }
 
-        if($result)
-        {
+    public function show(string $id)
+    {
+        return $this->peopleResponse(function () use ($id) {
+            $teacher = Teacher::with('user')->findOrFail($id);
+            $this->authorize('view', $teacher);
+            return response()->json(['status' => true, 'message' => 'Teacher retrieved successfully', 'data' => $teacher]);
+        });
+    }
+
+    public function updateAdminInfo(Request $request, string $id)
+    {
+        return $this->peopleResponse(function () use ($request, $id) {
+            $teacher = Teacher::findOrFail($id);
+            $this->authorize('update', $teacher);
+            $data = $request->validate(['salary' => 'required|integer|min:0']);
             return response()->json([
-                'status' => true,
-                'message' => 'Teacher information updated successfully.',
-                'data' =>  $teacher->with('user')->where('id',$id)->first()
+                'status' => true, 'message' => 'Teacher salary updated successfully',
+                'data' => $this->accounts->updateTeacherProfile($teacher, $data),
             ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while updating the teacher.',
-            ]);
-        }
-
+        });
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(TeacherRequest $request)
-    {
-        // 
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Teacher $teacher,string $id)
-    {
-        $teacher = Teacher::with('user')->findOrFail($id);
-        $this->authorize('view', $teacher);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Teacher retrieved successfully',
-            'data' => $teacher,
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Teacher $teacher,string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        $teacher = Teacher::findOrFail($id);
-        $this->authorize('update', $teacher);
-        
-
-        $result = $teacher->update($request->validate([
-            'resume' => 'nullable|string',
-            'bio' => 'nullable|string',
-            'degree' => 'nullable|string',
-        ]));
-
-        if($result)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'Teacher information updated successfully.',
-                'data' => $teacher->with('user')->where('id',$id)->first()
+        return $this->peopleResponse(function () use ($request, $id) {
+            $teacher = Teacher::findOrFail($id);
+            $this->authorize('update', $teacher);
+            $data = $request->validate([
+                'resume' => 'sometimes|nullable|string|max:255',
+                'bio' => 'sometimes|nullable|string|max:255',
+                'degree' => 'sometimes|nullable|string|max:255',
             ]);
-        }else{
             return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while updating the teacher.',
+                'status' => true, 'message' => 'Teacher information updated successfully',
+                'data' => $this->accounts->updateTeacherProfile($teacher, $data),
             ]);
-        }
+        });
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        try{
-            $teacher = Teacher::findOrFail($id);
-        }catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'message' => 'Teacher not found',
-                'error' => $e->getMessage()
-            ]);
-        }
-
-        $result = $this->accounts->deleteTeacherProfile($teacher);
-
-        if($result)
-        {
-            return response()->json([
-                'status' => true,
-                'message' => 'Teacher deleted successfully.',
-            ]);
-        }else{
-            return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while deleting the teacher.',
-            ]);
-        }
-        
-    }   
+        return $this->peopleResponse(function () use ($id) {
+            $this->accounts->deleteTeacherProfile(Teacher::findOrFail($id));
+            return response()->json(['status' => true, 'message' => 'Teacher profile deactivated; records retained.', 'error' => null]);
+        });
+    }
 }

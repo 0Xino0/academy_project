@@ -19,6 +19,8 @@ class Teacher extends Model
         'user_id'
     ];
 
+    protected $casts = ['salary' => 'string'];
+
     public function user()
     {
         return $this->belongsTo(User::class,'user_id' , 'id');
