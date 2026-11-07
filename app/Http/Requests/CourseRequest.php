@@ -22,7 +22,7 @@ class CourseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string',
+            'title' => 'bail|required|string|max:255',
             'level' => 'required|string|in:Beginner,Intermediate,Advanced',
             'description' => 'nullable|string'
         ];

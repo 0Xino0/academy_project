@@ -5,11 +5,14 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CourseRequest;
 use App\Models\Course;
+use App\Services\CourseService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
 
 class CourseController extends Controller
 {
+    public function __construct(private CourseService $courses) {}
+
     public function index()
     {
         try {
@@ -26,7 +29,7 @@ class CourseController extends Controller
     public function store(CourseRequest $request)
     {
         try {
-            $course = Course::create($request->validated());
+            $course = $this->courses->save($request->validated());
 
             return response()->json([
                 'status' => true,
@@ -56,8 +59,7 @@ class CourseController extends Controller
     public function update(CourseRequest $request, string $id)
     {
         try {
-            $course = Course::findOrFail($id);
-            $course->update($request->validated());
+            $course = $this->courses->save($request->validated(), $id);
 
             return response()->json([
                 'status' => true,
