@@ -21,7 +21,7 @@ class GradeController extends Controller
     public function index(string $class_id)
     {
         return $this->respond(function () use ($class_id) {
-            $class = ClassModel::findOrFail($class_id);
+            $class = ClassModel::withTrashed()->findOrFail($class_id);
             $this->authorize('viewGrades', $class);
             $students = Student::with('user')->whereHas('registrations', fn ($query) => $query->where('class_id', $class->id))
                 ->orderBy('id')->get();
@@ -53,7 +53,7 @@ class GradeController extends Controller
     public function showForStudent(string $class_id)
     {
         return $this->respond(function () use ($class_id) {
-            $class = ClassModel::findOrFail($class_id);
+            $class = ClassModel::withTrashed()->findOrFail($class_id);
             $this->authorize('viewOwnGrade', $class);
             $grade = Grade::with(['student.user', 'class.teacher.user'])
                 ->where('class_id', $class->id)->where('student_id', auth()->user()->student->id)->first();

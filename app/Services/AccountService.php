@@ -109,7 +109,9 @@ class AccountService
         return DB::transaction(function () use ($user) {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
 
-            app(AcademicDeletionService::class)->protectUser($user);
+            foreach ([$user->student, $user->teacher] as $profile) {
+                if ($profile && ! $profile->delete()) throw new RuntimeException('The profile could not be archived.');
+            }
 
             if (! $user->delete()) {
                 throw new RuntimeException('The user could not be deleted.');

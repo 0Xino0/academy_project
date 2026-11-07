@@ -4,8 +4,7 @@ namespace App\Services;
 
 use App\Models\ClassModel;
 use App\Models\Schedule;
-use App\Support\ScheduleTime;
-use Carbon\CarbonImmutable;
+use App\Support\WeeklySchedule;
 use Illuminate\Validation\ValidationException;
 
 class ScheduleConflictValidator
@@ -26,24 +25,17 @@ class ScheduleConflictValidator
             ->get();
 
         foreach ($candidates as $existing) {
-            $sharedStart = CarbonImmutable::parse(max($class->start_date, $existing->class->start_date));
+            $sharedStart = max($class->start_date, $existing->class->start_date);
             $sharedEnd = min($class->end_date, $existing->class->end_date);
-            $weekday = array_search($data['day_of_week'], [
-                'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
-            ], true);
-            $firstLesson = $sharedStart->addDays(($weekday - $sharedStart->dayOfWeek + 7) % 7);
-            if ($firstLesson->toDateString() > $sharedEnd) {
-                continue;
-            }
-            $start = ScheduleTime::normalize($existing->start_time);
-            $end = ScheduleTime::normalize($existing->end_time);
-            if ($start === null || $end === null || $start >= $end) {
+            if (! WeeklySchedule::occursBetween($sharedStart, $sharedEnd, $data['day_of_week'])) continue;
+            $slot = WeeklySchedule::slot($existing);
+            if ($slot === null) {
                 throw ValidationException::withMessages([
                     'schedule' => 'An existing schedule has invalid times. Correct it before adding an overlapping schedule.',
                 ]);
             }
             // Half-open intervals allow a lesson to start exactly when the previous one ends.
-            if ($start < $data['end_time'] && $end > $data['start_time']) {
+            if (WeeklySchedule::overlaps($slot, $data)) {
                 throw ValidationException::withMessages([
                     'schedule' => 'The time overlaps another schedule for this class or teacher.',
                 ]);

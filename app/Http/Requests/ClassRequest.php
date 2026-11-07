@@ -24,7 +24,7 @@ class ClassRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'course_id' => 'required|integer|exists:courses,id',
+            'course_id' => ['required', 'integer', Rule::exists('courses', 'id')->whereNull('deleted_at')],
             'teacher_id' => ['required', 'integer', Rule::exists('teachers', 'id')->whereNull('deleted_at')],
             'term_id' => ['sometimes', 'integer', Rule::in([$this->route('term_id')])],
             'start_date' => 'required|date_format:Y-m-d',

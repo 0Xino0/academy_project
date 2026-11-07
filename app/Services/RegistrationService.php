@@ -32,7 +32,7 @@ class RegistrationService
                 }
                 $this->rules->assertNoPreviousDebt($student);
                 $this->rules->assertClassAvailable($class);
-                $this->rules->assertNoStudentConflict($student, $class);
+                $this->rules->assertNoStudentConflict($student, $class, true);
                 $registration = new Registration(['student_id' => $student->id, 'class_id' => $class->id]);
                 if (! $registration->save()) throw new RuntimeException('Enrollment could not be saved.');
                 $debt = $registration->debt()->make(['amount' => $class->tuition_fee, 'remaining' => $class->tuition_fee, 'waived_amount' => '0.00']);

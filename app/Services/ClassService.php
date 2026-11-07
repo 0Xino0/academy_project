@@ -3,16 +3,17 @@
 namespace App\Services;
 
 use App\Models\ClassModel;
+use App\Models\Course;
 use App\Models\Teacher;
 use App\Models\Term;
-use App\Support\ScheduleTime;
+use App\Support\WeeklySchedule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class ClassService
 {
-    public function __construct(private ScheduleConflictValidator $schedules) {}
+    public function __construct(private ScheduleConflictValidator $schedules, private StudentScheduleValidator $students) {}
 
     public function save(string $termId, array $data, ?string $classId = null): ClassModel
     {
@@ -20,6 +21,8 @@ class ClassService
             $term = Term::whereKey($termId)->lockForUpdate()->firstOrFail();
             $class = $classId === null ? new ClassModel()
                 : ClassModel::where('term_id', $term->id)->findOrFail($classId);
+            $studentIds = $classId === null ? [] : $this->students->lockParticipants($class);
+            $datesChanged = $classId !== null && ($class->start_date !== $data['start_date'] || $class->end_date !== $data['end_date']);
             $teacherIds = array_unique(array_filter([$class->teacher_id, $data['teacher_id']]));
             $teachers = Teacher::withTrashed()->whereIn('id', $teacherIds)->orderBy('id')->lockForUpdate()->get();
             $teacher = $teachers->firstWhere('id', $data['teacher_id']);
@@ -29,6 +32,7 @@ class ClassService
             if ($classId !== null) {
                 $class = ClassModel::where('term_id', $term->id)->lockForUpdate()->findOrFail($classId);
             }
+            Course::whereKey($data['course_id'])->lockForUpdate()->firstOrFail();
             if (! $term->is_active) {
                 throw ValidationException::withMessages(['term_id' => 'The term is not active.']);
             }
@@ -52,19 +56,17 @@ class ClassService
             }
             if ($recheckSchedules) {
                 foreach ($class->schedules()->lockForUpdate()->get() as $schedule) {
-                    $start = ScheduleTime::normalize($schedule->start_time);
-                    $end = ScheduleTime::normalize($schedule->end_time);
-                    if ($start === null || $end === null || $start >= $end
-                        || ! in_array($schedule->day_of_week, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], true)) {
+                    $slot = WeeklySchedule::slot($schedule);
+                    if ($slot === null) {
                         throw ValidationException::withMessages(['schedule' => 'Correct the existing invalid schedule before changing teacher or class dates.']);
                     }
-                    $this->schedules->ensureAvailable($class, [
-                        'day_of_week' => $schedule->day_of_week, 'start_time' => $start, 'end_time' => $end,
-                    ], $schedule->id);
+                    $this->schedules->ensureAvailable($class, $slot, $schedule->id);
                 }
             }
 
+            if ($datesChanged) $this->students->ensureEditable($class, $studentIds);
+
             return $class->load(['course', 'teacher.user', 'term'])->loadCount('registrations');
-        });
+        }, 3);
     }
 }

@@ -4,33 +4,24 @@ namespace App\Services;
 
 use App\Models\ClassModel;
 use App\Models\Course;
-use App\Models\Grade;
+use App\Models\Debt;
 use App\Models\Registration;
+use App\Models\Schedule;
 use App\Models\Student;
-use App\Models\Teacher;
 use App\Models\Term;
-use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class AcademicDeletionService
 {
-    private function protectClasses(array $ids): void
-    {
-        if (Registration::withTrashed()->whereIn('class_id', $ids)->lockForUpdate()->first(['id'])
-            || Grade::whereIn('class_id', $ids)->lockForUpdate()->first(['id'])) {
-            throw ValidationException::withMessages(['registrations' => 'Enrollment and grade history must be retained. This record cannot be deleted.']);
-        }
-    }
-
     public function deleteClass(string $termId, string $classId): void
     {
         DB::transaction(function () use ($termId, $classId) {
             Term::whereKey($termId)->lockForUpdate()->firstOrFail();
-            $class = ClassModel::where('term_id', $termId)->lockForUpdate()->findOrFail($classId);
-            $this->protectClasses([$class->id]);
-            if (! $class->delete()) throw new RuntimeException('Class deletion was not saved.');
+            $class = ClassModel::where('term_id', $termId)->findOrFail($classId);
+            $this->archiveClasses([$class->id]);
         }, 3);
     }
 
@@ -38,33 +29,48 @@ class AcademicDeletionService
     {
         DB::transaction(function () use ($id) {
             $term = Term::whereKey($id)->lockForUpdate()->firstOrFail();
-            $classes = $term->classes()->orderBy('id')->lockForUpdate()->get(['id']);
-            $this->protectClasses($classes->modelKeys());
-            if (! $term->delete()) throw new RuntimeException('Term deletion was not saved.');
+            $this->archiveClasses($term->classes()->orderBy('id')->pluck('id')->all());
+            if (! $term->delete()) throw new RuntimeException('Term archive was not saved.');
         }, 3);
     }
 
     public function deleteCourse(string $id): void
     {
         DB::transaction(function () use ($id) {
-            $termIds = ClassModel::where('course_id', $id)->pluck('term_id')->unique();
+            $termIds = ClassModel::where('course_id', $id)->orderBy('term_id')->pluck('term_id')->unique();
             Term::whereIn('id', $termIds)->orderBy('id')->lockForUpdate()->get(['id']);
+            // Class creation/edit also locks this course before assigning it.
             $course = Course::whereKey($id)->lockForUpdate()->firstOrFail();
-            $classes = $course->classes()->orderBy('id')->lockForUpdate()->get(['id']);
-            $this->protectClasses($classes->modelKeys());
-            if (! $course->delete()) throw new RuntimeException('Course deletion was not saved.');
+            if ($course->classes()->whereNotIn('term_id', $termIds)->exists()) {
+                throw ValidationException::withMessages(['course' => 'The course changed while deletion was being prepared. Reload and try again.']);
+            }
+            $this->archiveClasses($course->classes()->orderBy('id')->pluck('id')->all());
+            if (! $course->delete()) throw new RuntimeException('Course archive was not saved.');
         }, 3);
     }
 
-    public function protectUser(User $user): void
+    private function archiveClasses(array $classIds): void
     {
-        $studentIds = Student::withTrashed()->where('user_id', $user->id)->pluck('id');
-        if (Registration::withTrashed()->whereIn('student_id', $studentIds)->lockForUpdate()->first(['id'])
-            || Grade::whereIn('student_id', $studentIds)->lockForUpdate()->first(['id'])) {
-            throw ValidationException::withMessages(['user' => 'This account has enrollment or grade history and cannot be permanently deleted.']);
+        $studentIds = Registration::whereIn('class_id', $classIds)->orderBy('student_id')->pluck('student_id')->unique();
+        Student::withTrashed()->whereIn('id', $studentIds)->orderBy('id')->lockForUpdate()->get(['id']);
+        $classes = ClassModel::whereIn('id', $classIds)->orderBy('id')->lockForUpdate()->get();
+        $registrations = Registration::withTrashed()->whereIn('class_id', $classIds)->orderBy('id')->lockForUpdate()->get();
+        $debts = Debt::whereIn('registration_id', $registrations->modelKeys())->orderBy('id')->lockForUpdate()->get();
+        foreach ($debts as $debt) {
+            $remaining = Money::cents($debt->remaining);
+            if ($remaining === 0) continue;
+            $debt->waived_amount = Money::decimal(Money::cents($debt->waived_amount) + $remaining);
+            $debt->remaining = '0.00';
+            if (! $debt->save()) throw new RuntimeException('Class closure waiver was not saved.');
         }
-        $teacherIds = Teacher::withTrashed()->where('user_id', $user->id)->pluck('id');
-        $classes = ClassModel::whereIn('teacher_id', $teacherIds)->orderBy('id')->lockForUpdate()->get(['id']);
-        $this->protectClasses($classes->modelKeys());
+        foreach ($registrations as $registration) {
+            if (! $registration->trashed() && ! $registration->delete()) throw new RuntimeException('Class enrollment closure was not saved.');
+        }
+        foreach (Schedule::whereIn('class_id', $classIds)->orderBy('id')->lockForUpdate()->get() as $schedule) {
+            if (! $schedule->delete()) throw new RuntimeException('Class schedule archive was not saved.');
+        }
+        foreach ($classes as $class) {
+            if (! $class->delete()) throw new RuntimeException('Class archive was not saved.');
+        }
     }
 }

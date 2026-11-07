@@ -17,11 +17,13 @@ class ClassController extends Controller
 {
     public function __construct(private ClassService $classes) {}
 
-    public function index(string $term_id)
+    public function index(Request $request, string $term_id)
     {
-        return $this->respond(function () use ($term_id) {
-            Term::findOrFail($term_id);
-            $classes = ClassModel::with(['course', 'teacher.user', 'term'])->withCount('registrations')
+        $request->validate(['include_archived' => 'sometimes|boolean']);
+        return $this->respond(function () use ($request, $term_id) {
+            $include = $request->boolean('include_archived');
+            Term::query()->when($include, fn ($query) => $query->withTrashed())->findOrFail($term_id);
+            $classes = ClassModel::query()->when($include, fn ($query) => $query->withTrashed())->with(['course', 'teacher.user', 'term'])->withCount('registrations')
                 ->where('term_id', $term_id)->get();
 
             return $this->listing($classes);
@@ -32,13 +34,13 @@ class ClassController extends Controller
     {
         $request->validate(['include_cancelled' => 'sometimes|boolean']);
         return $this->respond(function () use ($request, $term_id) {
-            Term::findOrFail($term_id);
+            Term::query()->when($request->boolean('include_cancelled'), fn ($query) => $query->withTrashed())->findOrFail($term_id);
             $studentId = auth()->user()->student->id;
             $memberships = function ($query) use ($studentId, $request) {
                 if ($request->boolean('include_cancelled')) $query->withTrashed();
                 return $query->where('student_id', $studentId);
             };
-            $classes = ClassModel::with(['course', 'teacher.user', 'term',
+            $classes = ClassModel::query()->when($request->boolean('include_cancelled'), fn ($query) => $query->withTrashed())->with(['course', 'teacher.user', 'term',
                 'registrations' => $memberships])
                 ->withCount('registrations')->where('term_id', $term_id)
                 ->whereHas('registrations', $memberships)->get();

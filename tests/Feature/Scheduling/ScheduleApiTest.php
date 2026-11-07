@@ -170,7 +170,8 @@ class ScheduleApiTest extends AcademicTestCase
         $this->putJson($this->path($other, $schedule), $this->hours())->assertNotFound();
         $this->assertDatabaseCount('schedules', 1);
         $this->deleteJson($this->path($class, $schedule))->assertOk()->assertJsonPath('schedule', null);
-        $this->assertDatabaseCount('schedules', 0);
+        $this->assertSoftDeleted('schedules', ['id' => $schedule->id]);
+        $this->assertSame(0, Schedule::count());
     }
 
     public function test_empty_lists_are_successful_for_manager_teacher_and_student(): void

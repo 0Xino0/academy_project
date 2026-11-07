@@ -28,7 +28,8 @@ class CourseApiContractTest extends AcademicTestCase
         $this->putJson('/api/v1/courses/'.$id, $data)->assertOk()->assertJsonPath('status', true)
             ->assertJsonPath('data.title', 'Updated English');
         $this->deleteJson('/api/v1/courses/'.$id)->assertOk()->assertJsonPath('status', true)->assertJsonMissingPath('stauts');
-        $this->assertDatabaseMissing('courses', ['id' => $id]);
+        $this->assertSoftDeleted('courses', ['id' => $id]);
+        $this->getJson('/api/v1/courses/'.$id)->assertNotFound();
     }
 
     public function test_missing_courses_return_404_instead_of_a_resolved_error_with_a_typo(): void

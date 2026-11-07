@@ -7,15 +7,16 @@ use App\Models\ClassModel;
 use App\Models\Debt;
 use App\Models\Registration;
 use App\Models\Student;
-use App\Support\ScheduleTime;
-use Carbon\CarbonImmutable;
+use App\Support\WeeklySchedule;
 
 class EnrollmentRules
 {
+    public function __construct(private StudentScheduleValidator $schedules) {}
+
     public function assertNoPreviousDebt(Student $student): void
     {
         $registrations = Registration::withTrashed()->where('student_id', $student->id)->get(['id']);
-        if (Registration::withTrashed()->whereIn('id', $registrations->modelKeys())->whereDoesntHave('debt')->exists()) {
+        if (Registration::withTrashed()->whereIn('id', $registrations->modelKeys())->whereHas('class', fn ($query) => $query->whereNull('classes.deleted_at'))->whereDoesntHave('debt')->exists()) {
             throw new EnrollmentConflict('missing_billing_record', 'An earlier enrollment has no billing record. Contact the academy.');
         }
         if (Debt::whereIn('registration_id', $registrations->modelKeys())->where('remaining', '>', 0)->exists()) {
@@ -26,7 +27,8 @@ class EnrollmentRules
     public function assertClassAvailable(ClassModel $class): void
     {
         $today = now()->toDateString();
-        if (! $class->term?->is_active || ! $class->teacher?->user) {
+        if (! $class->term?->is_active || $class->term->trashed() || ! $class->course || $class->course->trashed()
+            || ! $class->teacher?->user || $class->teacher->user->trashed()) {
             throw new EnrollmentConflict('class_unavailable', 'This class or its teacher is not available for enrollment.');
         }
         if (! $class->startRegistration_Date || ! $class->endRegistration_Date
@@ -47,42 +49,17 @@ class EnrollmentRules
         }
     }
 
-    public function assertNoStudentConflict(Student $student, ClassModel $class): void
+    public function assertNoStudentConflict(Student $student, ClassModel $class, bool $lockPeers = false): void
     {
-        $existing = Registration::where('student_id', $student->id)->where('class_id', '!=', $class->id)
-            ->with('class.schedules')->get();
-        foreach ($existing as $registration) {
-            $other = $registration->class;
-            $start = max($class->start_date, $other->start_date);
-            $end = min($class->end_date, $other->end_date);
-            if ($start > $end) continue;
-            if ($other->schedules->isEmpty()) {
-                throw new EnrollmentConflict('schedule_unavailable', 'An earlier class has no schedule. Contact the academy before enrolling in an overlapping date range.');
-            }
-            foreach ($class->schedules as $newSlot) {
-                [$newStart, $newEnd] = $this->validTimes($newSlot);
-                foreach ($other->schedules as $oldSlot) {
-                    [$oldStart, $oldEnd] = $this->validTimes($oldSlot);
-                    if ($newSlot->day_of_week !== $oldSlot->day_of_week) continue;
-                    $weekday = array_search($newSlot->day_of_week, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], true);
-                    $first = CarbonImmutable::parse($start);
-                    if ($first->addDays(($weekday - $first->dayOfWeek + 7) % 7)->toDateString() > $end) continue;
-                    if ($newStart < $oldEnd && $newEnd > $oldStart) {
-                        throw new EnrollmentConflict('schedule_conflict', 'This class overlaps another active enrollment in your schedule.');
-                    }
-                }
-            }
-        }
+        $this->schedules->assertAvailable($class, [$student->id], $lockPeers);
     }
 
     private function validTimes($schedule): array
     {
-        $start = ScheduleTime::normalize($schedule->start_time);
-        $end = ScheduleTime::normalize($schedule->end_time);
-        if ($start === null || $end === null || $start >= $end
-            || ! in_array($schedule->day_of_week, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], true)) {
+        $slot = WeeklySchedule::slot($schedule);
+        if ($slot === null) {
             throw new EnrollmentConflict('schedule_unavailable', 'A class schedule needs correction by the academy.');
         }
-        return [$start, $end];
+        return [$slot['start_time'], $slot['end_time']];
     }
 }

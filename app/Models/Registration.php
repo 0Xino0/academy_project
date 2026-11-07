@@ -21,7 +21,7 @@ class Registration extends Model
 
     public function class()
     {
-        return $this->belongsTo(ClassModel::class,'class_id');
+        return $this->belongsTo(ClassModel::class,'class_id')->withTrashed();
     }
 
     public function student()

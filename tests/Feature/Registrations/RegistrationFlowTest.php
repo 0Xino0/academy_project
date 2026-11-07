@@ -169,10 +169,12 @@ class RegistrationFlowTest extends AcademicTestCase
         $this->actingAs($this->account('manager'), 'api');
         foreach (['/terms/'.$class->term_id.'/classes/'.$class->id, '/terms/'.$class->term_id,
             '/courses/'.$class->course_id, '/users/'.$owner->id, '/users/'.$class->teacher->user_id] as $path) {
-            $this->deleteJson('/api/v1'.$path)->assertUnprocessable();
+            $this->deleteJson('/api/v1'.$path)->assertOk();
         }
         $this->assertDatabaseCount('registrations', 1);
         $this->assertDatabaseCount('debts', 1);
+        $this->assertSoftDeleted('classes', ['id' => $class->id]);
+        $this->assertSoftDeleted('users', ['id' => $owner->id]);
     }
 
     public function test_cancelled_membership_cannot_be_used_to_write_a_grade(): void

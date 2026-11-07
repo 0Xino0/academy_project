@@ -9,15 +9,17 @@ use App\Services\TermService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Throwable;
+use Illuminate\Http\Request;
 
 class TermController extends Controller
 {
     public function __construct(private TermService $terms) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        $request->validate(['include_archived' => 'sometimes|boolean']);
         return $this->respond(fn () => response()->json([
-            'status' => true, 'message' => 'Terms fetched successfully', 'terms' => Term::all(),
+            'status' => true, 'message' => 'Terms fetched successfully', 'terms' => Term::query()->when($request->boolean('include_archived'), fn ($query) => $query->withTrashed())->get(),
         ]));
     }
 

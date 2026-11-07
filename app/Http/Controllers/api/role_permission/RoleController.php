@@ -5,9 +5,9 @@ namespace App\Http\Controllers\api\role_permission;
 use Exception;
 use Illuminate\Http\Request;
 use App\Http\Requests\RoleRequest;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use App\Http\Controllers\Controller;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 
 class RoleController extends Controller
 {
@@ -98,6 +98,9 @@ class RoleController extends Controller
             'name' => 'required|string|unique:roles,name,'.$role->id
         ]);
 
+        if (in_array($role->name, ['manager', 'teacher', 'student'], true) && $request->name !== $role->name) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['role' => 'Core application roles cannot be renamed.']);
+        }
         $role->update([
             'name' => $request->name,
         ]);
@@ -132,6 +135,9 @@ class RoleController extends Controller
             ]);
         }
 
+        if (in_array($role->name, ['manager', 'teacher', 'student'], true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['role' => 'Core application roles cannot be deleted.']);
+        }
         $result = $role->delete();
 
         if($result)

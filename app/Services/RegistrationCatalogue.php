@@ -21,7 +21,9 @@ class RegistrationCatalogue
         }
         $today = now()->toDateString();
         $classes = ClassModel::with(['course', 'teacher.user', 'term', 'schedules'])->withCount('registrations')
-            ->whereHas('term', fn ($query) => $query->where('is_active', true))->whereHas('teacher.user')
+            ->whereHas('term', fn ($query) => $query->where('is_active', true)->whereNull('terms.deleted_at'))
+            ->whereHas('course', fn ($query) => $query->whereNull('courses.deleted_at'))
+            ->whereHas('teacher.user', fn ($query) => $query->whereNull('users.deleted_at'))
             ->whereHas('schedules')->where('startRegistration_Date', '<=', $today)
             ->where('endRegistration_Date', '>=', $today)->where('start_date', '>', $today)->get();
         $data = [];

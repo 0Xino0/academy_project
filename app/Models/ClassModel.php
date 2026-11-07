@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassModel extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     // protected $hidden = [
     //     'created_at',
@@ -36,7 +37,7 @@ class ClassModel extends Model
 
     public function course()
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(Course::class)->withTrashed();
     }
     public function teacher()
     {
@@ -70,7 +71,7 @@ class ClassModel extends Model
 
     public function term()
     {
-        return $this->belongsTo(Term::class);
+        return $this->belongsTo(Term::class)->withTrashed();
     }
 
     public function schedules()
