@@ -2,149 +2,52 @@
 
 namespace App\Http\Controllers\api\role_permission;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Concerns\HandlesAccessResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PermissionRequest;
-use App\Models\Permission;
+use App\Services\AccessControlService;
 
 class PermissionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    use HandlesAccessResponses;
+
+    public function __construct(private AccessControlService $access) {}
+
     public function index()
     {
-        $permissions = Permission::all();
-        return response()->json([
-            'data' => $permissions
-        ]);
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Permissions retrieved successfully', 'data' => $this->access->permissions(),
+        ]));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(PermissionRequest $request)
     {
-        
-        $permission = Permission::create($request->validated());
-        if($permission)
-        {
-            return response()->json([
-                'message' => 'Permission created successfully',
-                'data' => $permission
-            ]);
-        }else{
-            return response()->json([
-               'message' => 'Failed to create permission'
-            ]);
-        }
-
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Permission created successfully',
+            'data' => $this->access->savePermission($request->validated()),
+        ]));
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        try{
-            $permission = Permission::findOrFail($id);
-        }catch(\Exception $e)
-        {
-            $errormsg = 'Could not find permission \n'. $e->getMessage();
-            return response()->json([
-                'msg' => $errormsg,
-            ]);
-        }
-        
-        return response()->json([
-            'data' => $permission
-        ]);
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Permission retrieved successfully', 'data' => $this->access->permission($id),
+        ]));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(PermissionRequest $request, string $id)
     {
-        //
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Permission updated successfully',
+            'data' => $this->access->savePermission($request->validated(), $id),
+        ]));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request,string $id)
-    {
-        try{
-            $permission = Permission::findOrFail($id);
-        }catch(\Exception $e)
-        {
-            $errormsg = 'Could not find permission \n'. $e->getMessage();
-            return response()->json([
-                'msg' => $errormsg,
-            ]);
-        }
-
-        $request->validate([
-            'name' => 'required|string|unique:permissions,name,'.$permission->id,
-        ]);
-        
-        $permission->update([
-            'name' => $request->name,
-        ]);
-
-        if($permission)
-        {
-            return response()->json([
-                'message' => 'Permission updated successfully',
-                'data' => $permission
-            ]);
-        }
-        else
-        {
-            return response()->json([
-               'message' => 'Failed to update permission'
-            ]);
-        }
-        
-        
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        try{
-            $permission = Permission::findOrFail($id);
-        }catch(\Exception $e)
-        {
-            $errormsg = 'Could not find permission \n'. $e->getMessage();
-            return response()->json([
-                'msg' => $errormsg,
-            ]);
-        }
-
-        $result = $permission->delete();
-
-        if($result)
-        {
-            return response()->json([
-               'message' => 'Permission deleted successfully'
-            ]);
-        }
-        else
-        {
-            return response()->json([
-               'message' => 'Failed to delete permission'
-            ]);
-        }
+        return $this->accessResponse(function () use ($id) {
+            $this->access->deletePermission($id);
+            return response()->json(['status' => true, 'message' => 'Permission deleted successfully']);
+        });
     }
 }

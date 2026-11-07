@@ -2,230 +2,90 @@
 
 namespace App\Http\Controllers\api\role_permission;
 
-use Exception;
-use Illuminate\Http\Request;
-use App\Http\Requests\RoleRequest;
-use App\Models\Role;
+use App\Http\Controllers\Concerns\HandlesAccessResponses;
 use App\Http\Controllers\Controller;
-use App\Models\Permission;
+use App\Http\Requests\RolePermissionsRequest;
+use App\Http\Requests\RoleRequest;
+use App\Services\AccessControlService;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    use HandlesAccessResponses;
+
+    public function __construct(private AccessControlService $access) {}
+
     public function index()
     {
-        $role = Role::get();
-        return response()->json([
-            'data' => $role
-        ]);
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Roles retrieved successfully', 'data' => $this->access->roles(),
+        ]));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(RoleRequest $request)
     {
-        $role = Role::create($request->validated());
-
-        if($role)
-        {
+        return $this->accessResponse(function () use ($request) {
+            $role = $this->access->saveRole($request->validated());
             return response()->json([
-                'message' => 'Role created successfully',
-                'role' => $role
+                'status' => true, 'message' => 'Role created successfully', 'data' => $role, 'role' => $role,
             ]);
-        }else{
-            return response()->json([
-                'message' => 'Role could not be created'
-            ]);
-        }
-
+        });
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        try
-        {
-            $role = Role::findOrFail($id);
-        }catch(Exception $e){
-            $errormsg = 'that role could not be found \n' . $e->getMessage();
-            return response()->json([
-               'msg' => $errormsg,
-            ]);
-        };
-
-        return response()->json([
-            'data' => $role
-        ]);
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Role retrieved successfully', 'data' => $this->access->role($id),
+        ]));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(RoleRequest $request, string $id)
     {
-        //
+        return $this->accessResponse(fn () => response()->json([
+            'status' => true, 'message' => 'Role updated successfully',
+            'data' => $this->access->saveRole($request->validated(), $id),
+        ]));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        try
-        {
-            $role = Role::findOrFail($id);
-        }catch(Exception $e){
-            $errormsg = 'that role could not be found \n' . $e->getMessage();
-            return response()->json([
-               'msg' => $errormsg,
-            ]);
-        };
-
-        $request->validate([
-            'name' => 'required|string|unique:roles,name,'.$role->id
-        ]);
-
-        if (in_array($role->name, ['manager', 'teacher', 'student'], true) && $request->name !== $role->name) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['role' => 'Core application roles cannot be renamed.']);
-        }
-        $role->update([
-            'name' => $request->name,
-        ]);
-
-        if($role)
-        {
-            return response()->json([
-                'msg' => 'the role has been updated',
-                'data' => $role
-
-            ]);
-        }else{
-            return response()->json([
-                'msg' => 'the role could not be updated'
-            ]);
-        }
-        
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        try{
-            $role = Role::findOrFail($id);
-        }catch(\Exception $e)
-        {
-            $errormsg = 'Could not find role \n'. $e->getMessage();
-            return response()->json([
-                'msg' => $errormsg,
-            ]);
-        }
-
-        if (in_array($role->name, ['manager', 'teacher', 'student'], true)) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['role' => 'Core application roles cannot be deleted.']);
-        }
-        $result = $role->delete();
-
-        if($result)
-        {
-            return response()->json([
-               'message' => 'role deleted successfully'
-            ]);
-        }
-        else
-        {
-            return response()->json([
-               'message' => 'Failed to delete role'
-            ]);
-        }
+        return $this->accessResponse(function () use ($id) {
+            $this->access->deleteRole($id);
+            return response()->json(['status' => true, 'message' => 'Role deleted successfully']);
+        });
     }
 
-    // show permissions to assign that to a role
     public function getPermissionsOfRole(string $id)
     {
-        try{
-            $role = Role::findOrFail($id);
-        }catch(\Exception $e)
-        {
-            $errormsg = 'Could not find role \n'. $e->getMessage();
+        return $this->accessResponse(function () use ($id) {
+            $role = $this->access->roleWithPermissions($id);
             return response()->json([
-                'msg' => $errormsg,
+                'status' => true, 'message' => 'Role permissions retrieved successfully', 'role' => $role,
+                'permissionsOfRole' => $role->permissions,
+                'permissonsOfRole' => $role->permissions, // Compatibility with the original response key.
+                'permissions' => $this->access->permissions(),
             ]);
-        }
-
-        $permissions = Permission::get();
-
-        return response()->json([
-            'role' => $role,
-            'permissonsOfRole' => $role->permissions,
-            'permissions' => $permissions
-        ]);
-    
-
+        });
     }
 
-    // give permissions to roles
-    public function givePermissionsToRole(Request $request , string $id)
+    public function givePermissionsToRole(RolePermissionsRequest $request, string $id)
     {
-        $request->validate([
-            'permissions' => 'required',
-        ]);
-
-        try{
-            $role = Role::findOrFail($id);
-        }catch(\Exception $e){
-            $errormsg = 'Could not find role \n'. $e->getMessage();
-            return response()->json([
-                'msg' => $errormsg,
-            ]);
-        }
-
-        $role->syncPermissions($request->permissions);
-
-        return response()->json([
-           'message' => 'Permissions given to role successfully'
-        ]);
-
-        
+        return $this->changePermissions($request, $id, false);
     }
 
-    // revoke permissions from a role
-    public function revokePermissionFromRole(Request $request, string $id)
+    public function revokePermissionFromRole(RolePermissionsRequest $request, string $id)
     {
-        $request->validate([
-            'permissions' => 'required',
-        ]);
+        return $this->changePermissions($request, $id, true);
+    }
 
-        try{
-            $role = Role::findOrFail($id);
-        }catch(\Exception $e){
-            $errormsg = 'Could not find role \n'. $e->getMessage();
+    private function changePermissions(RolePermissionsRequest $request, string $id, bool $revoke)
+    {
+        return $this->accessResponse(function () use ($request, $id, $revoke) {
+            $role = $this->access->changePermissions($id, $request->validated('permissions'), $revoke);
             return response()->json([
-                'msg' => $errormsg,
+                'status' => true,
+                'message' => $revoke ? 'Permissions removed from role successfully' : 'Role permissions replaced successfully',
+                'role' => $role, 'permissions' => $role->permissions,
             ]);
-        }
-
-        foreach ($request->permissions as $permission) {
-            $role->revokePermissionTo($permission);        
-        }
-
-        return response()->json([
-           'message' => 'Permission removed from role successfully',
-           'permissions' => $role->permissions
-        ]);
+        });
     }
 }
