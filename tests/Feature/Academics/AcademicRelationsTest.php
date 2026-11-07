@@ -85,7 +85,7 @@ class AcademicRelationsTest extends AcademicTestCase
         $grade = Grade::create(['class_id' => $class->id, 'student_id' => $student->id,
             'grade' => '0', 'entered_at' => '2026-11-06']);
 
-        $this->assertSame('0', $grade->fresh()->grade);
+        $this->assertSame(0.0, $grade->fresh()->grade);
         $this->assertArrayNotHasKey('entered_at', $grade->getAttributes());
     }
 

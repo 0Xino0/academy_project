@@ -10,6 +10,7 @@ use App\Services\ClassService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
 use Throwable;
 
 class ClassController extends Controller
@@ -27,15 +28,20 @@ class ClassController extends Controller
         });
     }
 
-    public function indexForStudent(string $term_id)
+    public function indexForStudent(Request $request, string $term_id)
     {
-        return $this->respond(function () use ($term_id) {
+        $request->validate(['include_cancelled' => 'sometimes|boolean']);
+        return $this->respond(function () use ($request, $term_id) {
             Term::findOrFail($term_id);
             $studentId = auth()->user()->student->id;
+            $memberships = function ($query) use ($studentId, $request) {
+                if ($request->boolean('include_cancelled')) $query->withTrashed();
+                return $query->where('student_id', $studentId);
+            };
             $classes = ClassModel::with(['course', 'teacher.user', 'term',
-                'registrations' => fn ($query) => $query->where('student_id', $studentId)])
+                'registrations' => $memberships])
                 ->withCount('registrations')->where('term_id', $term_id)
-                ->whereHas('registrations', fn ($query) => $query->where('student_id', $studentId))->get();
+                ->whereHas('registrations', $memberships)->get();
 
             return $this->listing($classes);
         });

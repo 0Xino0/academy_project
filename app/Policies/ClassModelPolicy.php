@@ -35,6 +35,13 @@ class ClassModelPolicy
             && $class->registrations()->where('student_id', $user->student->id)->exists();
     }
 
+    public function viewOwnGrade(User $user, ClassModel $class): bool
+    {
+        return $user->hasRole('student')
+            && $user->student !== null
+            && $class->registrations()->withTrashed()->where('student_id', $user->student->id)->exists();
+    }
+
     private function teaches(User $user, ClassModel $class): bool
     {
         return $user->hasRole('teacher')

@@ -23,11 +23,17 @@ class GradeRequest extends FormRequest
      */
     public function rules(): array
     {
+        return self::entryRules($this->route('class_id'));
+    }
+
+    public static function entryRules(string $classId): array
+    {
         return [
             'student_id' => [
                 'required',
+                'integer',
                 Rule::exists('students', 'id')->whereNull('deleted_at'),
-                Rule::exists('registrations', 'student_id')->where('class_id', $this->route('class_id'))->whereNull('cancelled_at'),
+                Rule::exists('registrations', 'student_id')->where('class_id', $classId)->whereNull('cancelled_at'),
             ],
             'grade' => 'required|numeric|min:0|max:20'
         ];

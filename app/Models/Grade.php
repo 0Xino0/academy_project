@@ -15,9 +15,11 @@ class Grade extends Model
         'grade',
     ];
 
+    protected $casts = ['grade' => 'float'];
+
     public function student()
     {
-        return $this->belongsTo(Student::class, 'student_id');
+        return $this->belongsTo(Student::class, 'student_id')->withTrashed();
     }
     public function class()
     {
