@@ -8,6 +8,7 @@ use App\Http\Requests\PaymentRequest;
 use App\Models\Debt;
 use App\Models\Payment;
 use App\Services\PaymentService;
+use App\Support\Money;
 
 class PaymentController extends Controller
 {
@@ -17,9 +18,13 @@ class PaymentController extends Controller
 
     public function index()
     {
-        return $this->enrollmentResponse(fn () => response()->json([
-            'status' => true, 'message' => 'Payments retrieved successfully', 'data' => Payment::with('debt')->get(),
-        ]));
+        return $this->enrollmentResponse(function () {
+            $payments = Payment::with(['debt.registration.student.user', 'debt.registration.class.term'])->orderBy('id')->get();
+            return response()->json([
+                'status' => true, 'message' => 'Payments retrieved successfully', 'data' => $payments,
+                'recorded_total' => Money::decimal($payments->sum(fn ($payment) => Money::cents($payment->amount))),
+            ]);
+        });
     }
 
     public function store(PaymentRequest $request, string $debt_id)

@@ -28,7 +28,7 @@ class PaymentService
             if (! $payment->save()) throw new RuntimeException('The payment could not be saved.');
             $debt->remaining = Money::decimal(Money::cents($debt->remaining) - $cents);
             if (! $debt->save()) throw new RuntimeException('The debt could not be updated.');
-            return $payment->load('debt');
+            return $payment->load(['debt.registration.student.user', 'debt.registration.class.term']);
         }, 3);
     }
 }
