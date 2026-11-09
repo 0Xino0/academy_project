@@ -31,8 +31,8 @@ class ClassRequest extends FormRequest
             'end_date' => 'required|date_format:Y-m-d|after:start_date',
             'startRegistration_Date' => 'required|date_format:Y-m-d|before:start_date',
             'endRegistration_Date' => 'required|date_format:Y-m-d|after:startRegistration_Date|before:start_date',
-            'capacity' => 'required|integer|min:1',
-            'tuition_fee' => 'required|numeric|min:0',
+            'capacity' => 'bail|required|integer|min:1|max:2147483647',
+            'tuition_fee' => 'bail|required|numeric|decimal:0,2|min:0|max:99999999.99',
         ];
     }
 }

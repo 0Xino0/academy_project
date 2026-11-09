@@ -23,8 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            $table->dropColumn('created_at');
-            $table->dropColumn('updated_at');
+            $table->dropTimestamps();
+            $table->date('payment_date')->nullable();
         });
     }
 };

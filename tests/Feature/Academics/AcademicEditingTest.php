@@ -66,6 +66,45 @@ class AcademicEditingTest extends AcademicTestCase
             ->assertJsonPath('class.course.id', $other->course_id)->assertJsonPath('class.registrations_count', 0);
     }
 
+    public static function invalidClassNumbers(): iterable
+    {
+        yield 'capacity overflow' => ['capacity', 2147483648];
+        yield 'fractional capacity' => ['capacity', 2.5];
+        yield 'zero capacity' => ['capacity', 0];
+        yield 'tuition overflow' => ['tuition_fee', '100000000.00'];
+        yield 'excess precision' => ['tuition_fee', '12.345'];
+        yield 'scientific notation string' => ['tuition_fee', '1e-3'];
+        yield 'negative tuition' => ['tuition_fee', '-0.01'];
+    }
+
+    /** @dataProvider invalidClassNumbers */
+    public function test_create_and_update_reject_numbers_outside_class_column_limits(string $field, int|float|string $value): void
+    {
+        $class = $this->classroom()->refresh();
+        $data = $this->classData($class, ['name' => 'Must not persist', $field => $value]);
+
+        $this->postJson('/api/v1/terms/'.$class->term_id.'/classes', $data)
+            ->assertUnprocessable()->assertJsonValidationErrors($field);
+        $this->putJson($this->path($class), $data)
+            ->assertUnprocessable()->assertJsonValidationErrors($field);
+        $this->assertDatabaseCount('classes', 1);
+        $this->assertSame($class->getAttributes(), $class->fresh()->getAttributes());
+    }
+
+    public function test_class_numbers_accept_column_maxima_and_free_tuition(): void
+    {
+        $class = $this->classroom();
+        $created = $this->postJson('/api/v1/terms/'.$class->term_id.'/classes', $this->classData($class, [
+            'capacity' => 2147483647, 'tuition_fee' => '99999999.99',
+        ]))->assertOk()->assertJsonPath('class.capacity', 2147483647)
+            ->assertJsonPath('class.tuition_fee', '99999999.99');
+
+        $this->putJson($this->path($class), $this->classData($class, ['capacity' => 1, 'tuition_fee' => 0]))
+            ->assertOk()->assertJsonPath('class.tuition_fee', '0.00');
+        $this->assertSame('99999999.99', ClassModel::findOrFail($created->json('class.id'))->tuition_fee);
+        $this->assertSame('0.00', $class->fresh()->tuition_fee);
+    }
+
     public function test_changing_a_teacher_cannot_create_a_schedule_conflict(): void
     {
         $class = $this->classroom();
